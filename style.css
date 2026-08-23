@@ -1,0 +1,3 @@
+.components-panel:not(.sh-dynamic-blocks) > .components-panel__body {
+	display: none;
+}

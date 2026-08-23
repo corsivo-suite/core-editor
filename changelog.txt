@@ -1,0 +1,24 @@
+= Unreleased — 01/08/2026 =
+* Rigenerati i bundle contro il package condiviso corrente, includendo il refresh visuale e gli asset RTL; contratti runtime invariati.
+* Nascosta ai non-developer la voce `Impostazioni > Theme` tramite la capability virtuale condivisa, mantenendo pagina, URL diretto e capability originali invariati.
+* Resa la palette di Corsivo Theme l'unica fonte di verità nell'editor, disattivando i preset colore core che nascondevano gli slug `black` e `white`.
+* Esteso il runtime dichiarativo di `blockStyles` con supporto a `selector`, `innerSelector`, `parts` e `register: false`.
+* Normalizzati i nomi dei blocchi custom con slash e corretto il case study `candied-world`, che ora genera un selettore valido e applica correttamente pink/black.
+* Ridisegnata la navigazione amministrativa in stile WordPress 7, con stato attivo, tastiera e scorrimento orizzontale del tab selezionato.
+* Aggiunta la compatibilità con WordPress 6.9+ per la dipendenza `block-style-variation-styles`/`global-styles` nei temi classici.
+* Accorpate le letture delle option artifact e del flag rewrite sul percorso caldo.
+* Rimosso il reader dei marker opachi dallo storage attività: il runtime accetta solo il formato corrente e resta fail-closed sugli stati invalidi.
+* Maintenance e test riallineati al contratto fresh/current-only, senza riscrittura o assorbimento di stati legacy.
+* Corretto il payload del configuratore current-format-only: `core_components.blocks` non viene più conservato né inviato, evitando il 400 al salvataggio.
+* Integrato come asset locale namespaced un decoder WOFF2 compatibile con il browser e invalidata la cache dei font.
+* Limitata la scansione OpenType ai soli file font effettivamente referenziati, evitando l'analisi dell'intero albero dei font.
+* Portate palette, spaziature, pagine funzionali, breakpoint e style template sui controlli del package privato Corsivo UI, mantenendo invariati storage e output generato.
+* Aggiunti asset RTL del configuratore e requisito minimo WordPress 6.6 per il manifest con `react-jsx-runtime`.
+* Il configuratore incorpora il package nella propria build autonoma e non dipende dal plugin showcase o dal registry npm a runtime.
+
+= 1.3.0 — 13/07/2026 =
+* `corsivo-theme.json` è l'unica persistenza supportata e usa esclusivamente il formato CSS corrente.
+* Persistenza protetta da lock, revision hash, controllo concorrenza, backup validato e ripristino della configurazione corrotta.
+* History con audit log strutturato, retention e tracciamento di salvataggi, export, upload, rebuild e integrazioni.
+* REST e upload font irrobustiti; endpoint pagine funzionali limitato ai dati pubblici e non protetti.
+* Cache CSS/JS fingerprintata e plugin-owned; integrazioni WPML e WooCommerce opzionali.

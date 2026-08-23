@@ -1,0 +1,7 @@
+node_modules/
+editor/package-lock.json
+.DS_Store
+Thumbs.db
+*.log
+.env
+*.zip

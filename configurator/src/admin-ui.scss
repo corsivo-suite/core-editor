@@ -1,0 +1,112 @@
+.ts-colors-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+	gap: 1rem;
+
+	> .corsivo-admin-ui-sortable-collection__item {
+		align-items: flex-start;
+		padding: 0.75rem;
+		border: 1px solid #c3c4c7;
+		border-radius: 4px;
+		background: #fff;
+	}
+
+	.corsivo-admin-ui-sortable-collection__content {
+		min-width: 0;
+		width: 100%;
+	}
+}
+
+.ts-color-swatch {
+	align-items: stretch;
+	gap: 0.75rem;
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	overflow: visible;
+	cursor: default;
+	transition: none;
+
+	&__fields {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		gap: 0.75rem;
+	}
+}
+
+.ts-colors-tab__add {
+	margin-top: 1rem;
+}
+
+.ts-spacing-tab {
+
+	&__layout,
+	&__preset-fields {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+		gap: 1rem;
+	}
+
+	.corsivo-admin-ui-repeater {
+		margin-top: 1rem;
+	}
+}
+
+.ts-functional-pages {
+
+	.corsivo-admin-ui-repeater {
+		margin-top: 1rem;
+	}
+
+	&__fields {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+		gap: 1rem;
+		align-items: start;
+	}
+
+	&__definition {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
+
+	&__source {
+		margin-inline-start: 0.5rem;
+		font-size: 11px;
+		font-weight: 400;
+		color: #50575e;
+	}
+}
+
+.ts-breakpoints-tab {
+
+	.corsivo-admin-ui-repeater {
+		max-width: 680px;
+		margin-top: 1rem;
+	}
+
+	&__fields {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		gap: 1rem;
+	}
+}
+
+.ts-context-assignments__fields {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	gap: 1rem;
+}
+
+.ts-templates-tab {
+
+	.corsivo-admin-ui-repeater {
+		margin-top: 1rem;
+	}
+
+	.corsivo-admin-ui-repeater__item-body > .ts-style-template__body {
+		padding: 0;
+		border-top: 0;
+	}
+}

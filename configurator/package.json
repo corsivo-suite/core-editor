@@ -1,0 +1,35 @@
+{
+  "name": "corsivo-theme-configurator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Corsivo Theme admin configurator",
+  "license": "GPL-2.0-or-later",
+  "main": "build/index.js",
+  "scripts": {
+    "build": "wp-scripts build",
+    "check": "npm run lint && npm test -- --runInBand && npm run build",
+    "lint": "npm run lint:js && npm run lint:style",
+    "lint:js": "wp-scripts lint-js src/adminUiTranslations.js src/collectionAdapters.js src/collectionAdapters.test.js src/configAdapter.js src/configAdapter.test.js src/components/Breakpoints/BreakpointsTab.jsx src/components/Colors/ColorsTab.jsx src/components/FunctionalPages/FunctionalPagesTab.jsx src/components/Spacing/SpacingTab.jsx src/components/Templates/TemplateCollections.jsx",
+    "lint:style": "wp-scripts lint-style src/admin-ui.scss",
+    "start": "wp-scripts start",
+    "test": "wp-scripts test-unit-js"
+  },
+  "devDependencies": {
+    "@wordpress/scripts": "^30.17.0",
+    "copy-webpack-plugin": "^10.2.4"
+  },
+  "dependencies": {
+    "@corsivo-suite/wp-admin-ui": "0.1.0",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@wordpress/api-fetch": "^7.50.0",
+    "@wordpress/components": "^32.4.0",
+    "@wordpress/element": "^8.2.0",
+	"@wordpress/icons": "12.2.0",
+    "@wordpress/i18n": "^6.23.0",
+    "opentype.js": "^2.0.0",
+    "wawoff2": "^2.0.1"
+  },
+  "overrides": {
+    "typescript": "5.9.2"
+  }
+}
