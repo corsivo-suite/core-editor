@@ -458,6 +458,8 @@ $test_install_fonts = function () {
 		'font-family' => 'Roboto',
 		'varname' => 'roboto',
 		'font-weight' => array('400' => 'https://example.com/roboto.woff2'),
+		'font-style' => array('italic' => 'https://example.com/roboto-italic.woff2'),
+		'font-style-weight' => array('italic' => '300 700'),
 	));
 };
 add_filter('corsivo_theme_colors', $test_colors, 1000);
@@ -482,7 +484,14 @@ $roboto_families = array_values(array_filter(
 		return ($font_family['slug'] ?? '') === 'roboto';
 	}
 ));
-$checks['font_face_merge'] = count($roboto_families) === 1 && count($roboto_families[0]['fontFace'] ?? array()) === 1;
+$roboto_faces = $roboto_families[0]['fontFace'] ?? array();
+$roboto_italic_faces = array_values(array_filter($roboto_faces, function ($font_face) {
+	return ($font_face['fontStyle'] ?? '') === 'italic';
+}));
+$checks['font_face_merge'] = count($roboto_families) === 1
+	&& count($roboto_faces) === 2
+	&& count($roboto_italic_faces) === 1
+	&& ($roboto_italic_faces[0]['fontWeight'] ?? '') === '300 700';
 
 $scope_test_slug = 'font-corsivo-scope-smoke';
 corsivo_theme_register_font_style(array('slug' => 'corsivo-scope-smoke', 'scope' => 'heading'), 'Scope Smoke');

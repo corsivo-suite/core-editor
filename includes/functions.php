@@ -366,6 +366,55 @@ if (!defined('ABSPATH')) exit;
 		return $result;
 	}
 
+	function corsivo_theme_build_install_font_faces($font) {
+		if (!is_array($font) || empty($font['font-family'])) {
+			return array();
+		}
+
+		$font_faces = array();
+		$font_display = !empty($font['font-display']) ? sanitize_key($font['font-display']) : '';
+		$style_weights = !empty($font['font-style-weight']) && is_array($font['font-style-weight'])
+			? $font['font-style-weight']
+			: array();
+
+		if (!empty($font['font-weight']) && is_array($font['font-weight'])) {
+			foreach ($font['font-weight'] as $weight => $url) {
+				if (empty($url) || !is_string($url)) continue;
+				$face = array(
+					'fontFamily' => $font['font-family'],
+					'fontWeight' => preg_replace('/[^0-9A-Za-z -]/', '', (string) $weight),
+					'fontStyle'  => 'normal',
+					'src'        => array($url),
+				);
+				if ($font_display) {
+					$face['fontDisplay'] = $font_display;
+				}
+				$font_faces[] = $face;
+			}
+		}
+
+		if (!empty($font['font-style']) && is_array($font['font-style'])) {
+			foreach ($font['font-style'] as $style => $url) {
+				if (empty($url) || !is_string($url)) continue;
+				$font_weight = isset($style_weights[$style])
+					? preg_replace('/[^0-9A-Za-z -]/', '', (string) $style_weights[$style])
+					: '400';
+				$face = array(
+					'fontFamily' => $font['font-family'],
+					'fontWeight' => $font_weight ?: '400',
+					'fontStyle'  => sanitize_key($style),
+					'src'        => array($url),
+				);
+				if ($font_display) {
+					$face['fontDisplay'] = $font_display;
+				}
+				$font_faces[] = $face;
+			}
+		}
+
+		return $font_faces;
+	}
+
 	/**
 	 * Inject colors, fonts, and global styles into theme.json at runtime.
 	 * Uses wp_theme_json_data_theme filter.
@@ -461,39 +510,7 @@ if (!defined('ABSPATH')) exit;
 				$family_slug = !empty($install_font['varname'])
 					? sanitize_title($install_font['varname'])
 					: sanitize_title($family_name);
-				$font_faces = array();
-
-				// font-weight entries
-				if (!empty($install_font['font-weight']) && is_array($install_font['font-weight'])) {
-					foreach ($install_font['font-weight'] as $weight => $url) {
-						$face = array(
-							'fontFamily' => $family_name,
-							'fontWeight' => (string) $weight,
-							'fontStyle'  => 'normal',
-							'src'        => array($url),
-						);
-						if (!empty($install_font['font-display'])) {
-							$face['fontDisplay'] = $install_font['font-display'];
-						}
-						$font_faces[] = $face;
-					}
-				}
-
-				// font-style entries (italic etc.)
-				if (!empty($install_font['font-style']) && is_array($install_font['font-style'])) {
-					foreach ($install_font['font-style'] as $style => $url) {
-						$face = array(
-							'fontFamily' => $family_name,
-							'fontWeight' => '400',
-							'fontStyle'  => $style,
-							'src'        => array($url),
-						);
-						if (!empty($install_font['font-display'])) {
-							$face['fontDisplay'] = $install_font['font-display'];
-						}
-						$font_faces[] = $face;
-					}
-				}
+				$font_faces = corsivo_theme_build_install_font_faces($install_font);
 
 				if (empty($font_faces)) continue;
 
@@ -1582,6 +1599,14 @@ if (!defined('ABSPATH')) exit;
 		return str_ireplace('</', '', (string) $css);
 	}
 
+	function corsivo_theme_resolve_font_source_url($source) {
+		$source = (string) $source;
+		if (str_starts_with($source, 'file:./')) {
+			return get_theme_file_uri(substr($source, strlen('file:./')));
+		}
+		return $source;
+	}
+
 	/**
 	 * Flatten theme.json preset arrays, whether grouped by origin or already flat.
 	 */
@@ -1649,7 +1674,7 @@ if (!defined('ABSPATH')) exit;
 
 				foreach ($sources as $src) {
 					if (empty($src) || !is_string($src)) continue;
-					$src_url = esc_url_raw($src);
+					$src_url = esc_url_raw(corsivo_theme_resolve_font_source_url($src));
 					if (empty($src_url)) continue;
 
 					// Map the file extension to a valid CSS format() keyword
@@ -1863,39 +1888,7 @@ if (!defined('ABSPATH')) exit;
 			if (!is_array($entry['features'])) continue;
 
 			$family_name = $entry['font-family'];
-			$font_faces = array();
-
-			if (!empty($entry['font-weight']) && is_array($entry['font-weight'])) {
-				foreach ($entry['font-weight'] as $weight => $url) {
-					if (empty($url) || !is_string($url)) continue;
-					$face = array(
-						'fontFamily' => $family_name,
-						'fontWeight' => (string) $weight,
-						'fontStyle'  => 'normal',
-						'src'        => array($url),
-					);
-					if (!empty($entry['font-display'])) {
-						$face['fontDisplay'] = $entry['font-display'];
-					}
-					$font_faces[] = $face;
-				}
-			}
-
-			if (!empty($entry['font-style']) && is_array($entry['font-style'])) {
-				foreach ($entry['font-style'] as $style => $url) {
-					if (empty($url) || !is_string($url)) continue;
-					$face = array(
-						'fontFamily' => $family_name,
-						'fontWeight' => '400',
-						'fontStyle'  => $style,
-						'src'        => array($url),
-					);
-					if (!empty($entry['font-display'])) {
-						$face['fontDisplay'] = $entry['font-display'];
-					}
-					$font_faces[] = $face;
-				}
-			}
+			$font_faces = corsivo_theme_build_install_font_faces($entry);
 
 			if (empty($font_faces)) continue;
 
@@ -1913,34 +1906,6 @@ if (!defined('ABSPATH')) exit;
 		echo "<style id='corsivo-theme-font-features-css'>\n" . corsivo_theme_sanitize_css_block($css) . "</style>\n";
 	}
 	add_action('wp_head', 'corsivo_theme_print_install_font_features_css', 60);
-
-	/**
-	 * Register external font stylesheets for the Gutenberg canvas.
-	 * Corsivo Theme now owns the editor preview styling runtime,
-	 * so the theme's editor-styles.css is intentionally not loaded here.
-	 */
-	function corsivo_theme_register_editor_stylesheets() {
-		$styles = array();
-
-		$import_fonts = apply_filters('corsivo_theme_custom_fonts', array());
-		foreach ($import_fonts as $entry) {
-			$url = is_array($entry) && isset($entry['url']) ? $entry['url'] : '';
-			if (empty($url)) continue;
-			$styles[] = $url;
-		}
-
-		$styles = array_values(array_unique(array_filter($styles)));
-		if (empty($styles)) {
-			return;
-		}
-
-		if (!current_theme_supports('editor-styles')) {
-			add_theme_support('editor-styles');
-		}
-
-		add_editor_style($styles);
-	}
-	add_action('after_setup_theme', 'corsivo_theme_register_editor_stylesheets', 20);
 
 	/**
 	 * Ensure the editor canvas gets the same preview wrapper class used by
@@ -2577,24 +2542,6 @@ if (!defined('ABSPATH')) exit;
 		$automatic_css = $global_title_css . $global_default_block_css;
 		if ($matched_tpl) {
 			$automatic_css .= corsivo_theme_generate_editor_template_css($matched_tpl);
-		}
-
-		// --- 2b. Load Google Fonts inside editor (including iframe) via @import ---
-		// wp_enqueue_style <link> tags only load in the parent admin page; the iframed
-		// editor (WP 6.0+) doesn't inherit them. @import inside wp_add_inline_style
-		// is injected into the iframe's <style> block, so fonts become available.
-		// MUST be added first because @import must appear before any other CSS rules.
-		$import_fonts = apply_filters('corsivo_theme_custom_fonts', array());
-		if (!empty($import_fonts)) {
-			$font_imports = '';
-			foreach ($import_fonts as $entry) {
-				$url = is_array($entry) && isset($entry['url']) ? $entry['url'] : '';
-				if (empty($url)) continue;
-				$font_imports .= '@import url("' . esc_url($url) . '");' . "\n";
-			}
-			if ($font_imports) {
-				wp_add_inline_style('wp-edit-blocks', $font_imports);
-			}
 		}
 
 		// Inject CSS for the resolved automatic template
