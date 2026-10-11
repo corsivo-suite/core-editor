@@ -42,34 +42,105 @@ export function createSpacingPreset( spacingSizes ) {
 	return { slug, name: `Spacing ${ slug }`, size: '1rem' };
 }
 
-export function reconcilePageAssignments( assignments, change ) {
+const hasUniqueSlug = ( items, slug ) =>
+	Boolean( slug ) && items.filter( ( item ) => item.slug === slug ).length === 1;
+
+function collectSlugReferenceChanges( items, change ) {
+	const referenceChanges = new Map();
+	const referenceOrigins = new Map();
 	if ( change.type === 'remove' ) {
-		const nextAssignments = { ...assignments };
-		delete nextAssignments[ change.item.slug ];
+		const source = change.item._slugReference || change.item.slug;
+		if ( source ) {
+			referenceChanges.set( source, '' );
+		}
+	} else if ( change.type === 'update' ) {
+		const source = change.previousItem._slugReference || change.previousItem.slug;
+		if ( source && source !== change.item.slug && hasUniqueSlug( items, change.item.slug ) ) {
+			referenceChanges.set( source, change.item.slug );
+		}
+	}
+
+	items.forEach( ( item, index ) => {
+		const isUpdatedItem = change.type === 'update' &&
+			( change.index === index || item === change.item );
+		const source = isUpdatedItem
+			? change.previousItem._slugReference || change.previousItem.slug
+			: item._slugReference;
+		if ( ! source ) {
+			return;
+		}
+		referenceOrigins.set( index, source );
+		if ( source !== item.slug && hasUniqueSlug( items, item.slug ) ) {
+			referenceChanges.set( source, item.slug );
+		}
+	} );
+	return { referenceChanges, referenceOrigins };
+}
+
+function stabilizeSlugReferences( items, referenceOrigins, referenceChanges ) {
+	let changed = false;
+	const nextItems = items.map( ( item, index ) => {
+		const source = referenceOrigins.get( index );
+		if ( ! source ) {
+			return item;
+		}
+		const resolved = hasUniqueSlug( items, item.slug ) &&
+			( source === item.slug || referenceChanges.get( source ) === item.slug );
+		if ( resolved ) {
+			if ( item._slugReference === undefined ) {
+				return item;
+			}
+			changed = true;
+			const { _slugReference, ...nextItem } = item;
+			return nextItem;
+		}
+		if ( item._slugReference === source ) {
+			return item;
+		}
+		changed = true;
+		return { ...item, _slugReference: source };
+	} );
+	return changed ? nextItems : items;
+}
+
+function collectPageSlugReferenceChanges( assignments, nextPages, change ) {
+	const changes = collectSlugReferenceChanges( nextPages, change );
+	let blocked = true;
+	while ( blocked ) {
+		blocked = false;
+		changes.referenceChanges.forEach( ( target, source ) => {
+			if (
+				target &&
+				assignments[ source ] !== undefined &&
+				assignments[ target ] !== undefined &&
+				! changes.referenceChanges.has( target )
+			) {
+				changes.referenceChanges.delete( source );
+				blocked = true;
+			}
+		} );
+	}
+	return changes;
+}
+
+export function reconcilePageAssignments( assignments, change, nextPages = [] ) {
+	const pages = nextPages.length || change.type !== 'update' ? nextPages : [ change.item ];
+	const { referenceChanges } = collectPageSlugReferenceChanges( assignments, pages, change );
+	if ( ! Array.from( referenceChanges.keys() ).some( ( source ) => assignments[ source ] !== undefined ) ) {
+		return assignments;
+	}
+	return Object.entries( assignments ).reduce( ( nextAssignments, [ slug, languages ] ) => {
+		const nextSlug = referenceChanges.has( slug ) ? referenceChanges.get( slug ) : slug;
+		if ( nextSlug ) {
+			nextAssignments[ nextSlug ] = languages;
+		}
 		return nextAssignments;
-	}
+	}, {} );
+}
 
-	if ( change.type !== 'update' ) {
-		return assignments;
-	}
-
-	const oldSlug = change.previousItem.slug;
-	const newSlug = change.item.slug;
-	if (
-		oldSlug === newSlug ||
-		! newSlug ||
-		assignments[ oldSlug ] === undefined ||
-		assignments[ newSlug ] !== undefined
-	) {
-		return assignments;
-	}
-
-	const nextAssignments = {
-		...assignments,
-		[ newSlug ]: assignments[ oldSlug ],
-	};
-	delete nextAssignments[ oldSlug ];
-	return nextAssignments;
+export function retainPageSlugReference( nextPages, change, assignments ) {
+	const { referenceChanges, referenceOrigins } = collectPageSlugReferenceChanges( assignments, nextPages, change );
+	return stabilizeSlugReferences( nextPages, referenceOrigins, referenceChanges );
 }
 
 export function reconcileBreakpointItems( breakpoints, previousItems = [] ) {
@@ -123,73 +194,22 @@ export function reconcileTemplateReferences(
 	change,
 	nextTemplates
 ) {
-	let oldSlug = '';
-	let newSlug = '';
-
-	if ( change.type === 'remove' ) {
-		oldSlug = change.item._slugReference || change.item.slug || '';
-	} else if ( change.type === 'update' ) {
-		oldSlug =
-			change.previousItem._slugReference ||
-			change.previousItem.slug ||
-			'';
-		newSlug = change.item.slug || '';
-		const isUnique =
-			nextTemplates.filter( ( template ) => template.slug === newSlug )
-				.length === 1;
-		if ( oldSlug === newSlug || ! newSlug || ! isUnique ) {
-			return contextStyles;
-		}
-	} else {
-		return contextStyles;
-	}
-
-	if ( ! oldSlug ) {
-		return contextStyles;
-	}
-
+	const { referenceChanges } = collectSlugReferenceChanges( nextTemplates, change );
 	let changed = false;
 	const nextContextStyles = contextStyles.map( ( assignment ) => {
-		if ( assignment.template !== oldSlug ) {
+		if ( ! referenceChanges.has( assignment.template ) ) {
 			return assignment;
 		}
 		changed = true;
-		return { ...assignment, template: newSlug };
+		return { ...assignment, template: referenceChanges.get( assignment.template ) };
 	} );
 
 	return changed ? nextContextStyles : contextStyles;
 }
 
 export function retainTemplateSlugReference( nextTemplates, change ) {
-	if ( change.type !== 'update' ) {
-		return nextTemplates;
-	}
-
-	const referenceSlug =
-		change.previousItem._slugReference || change.previousItem.slug || '';
-	const nextSlug = change.item.slug || '';
-	const isUnique =
-		Boolean( nextSlug ) &&
-		nextTemplates.filter( ( template ) => template.slug === nextSlug )
-			.length === 1;
-	const shouldRetainReference = Boolean( referenceSlug ) && ! isUnique;
-
-	if ( shouldRetainReference ) {
-		if ( change.item._slugReference === referenceSlug ) {
-			return nextTemplates;
-		}
-		return replaceCollectionItem( nextTemplates, change.index, {
-			...change.item,
-			_slugReference: referenceSlug,
-		} );
-	}
-
-	if ( change.item._slugReference === undefined ) {
-		return nextTemplates;
-	}
-
-	const { _slugReference, ...nextItem } = change.item;
-	return replaceCollectionItem( nextTemplates, change.index, nextItem );
+	const { referenceChanges, referenceOrigins } = collectSlugReferenceChanges( nextTemplates, change );
+	return stabilizeSlugReferences( nextTemplates, referenceOrigins, referenceChanges );
 }
 
 export function setDefaultStyleTemplate( templates, index, enabled ) {

@@ -67,7 +67,7 @@ function corsivo_theme_asset_fingerprint($type, $assets) {
 
 function corsivo_theme_write_minified_file($minifier, $destination_path) {
 	try {
-		$minified = $minifier->minify();
+		$minified = $minifier->execute($destination_path);
 	} catch (Throwable $error) {
 		return new WP_Error('corsivo_theme_minify_failed', $error->getMessage());
 	}
@@ -82,21 +82,83 @@ function corsivo_theme_write_minified_file($minifier, $destination_path) {
 	return true;
 }
 
-function corsivo_theme_prune_asset_cache($type, $current_filename) {
-	$location = corsivo_theme_generated_cache_location();
-	if (is_wp_error($location)) return;
-	$entries = @scandir($location['path']);
-	if (!is_array($entries)) return;
-	foreach ($entries as $entry) {
-		if ($entry === $current_filename) continue;
-		if (!preg_match('/^corsivo-theme-[a-f0-9]{16}\.min\.' . preg_quote($type, '/') . '$/', $entry)) continue;
-		$path = trailingslashit($location['path']) . $entry;
-		if (is_file($path)) @unlink($path);
+function corsivo_theme_order_enqueued_assets($registry) {
+	if (!is_object($registry)) return array();
+	$ordered = array();
+	$visiting = array();
+	$visited = array_fill_keys($registry->done, true);
+	$visit = function ($handle) use (&$visit, &$ordered, &$visiting, &$visited, $registry) {
+		$handle = explode('?', $handle)[0];
+		if (isset($visited[$handle])) return true;
+		if (isset($visiting[$handle]) || !isset($registry->registered[$handle])) return false;
+		$visiting[$handle] = true;
+		foreach ($registry->registered[$handle]->deps as $dependency) {
+			if (!$visit($dependency)) return false;
+		}
+		unset($visiting[$handle]);
+		$visited[$handle] = true;
+		$ordered[] = $handle;
+		return true;
+	};
+	foreach ($registry->queue as $handle) {
+		if (!$visit($handle)) return new WP_Error('corsivo_theme_asset_dependencies_invalid', 'Enqueued assets contain missing or circular dependencies.');
+	}
+	return $ordered;
+}
+
+function corsivo_theme_select_bundle_assets($registry, $assets, $ordered_handles) {
+	if (empty($assets)) return array();
+	do {
+		$previous_handles = array_keys($assets);
+		do {
+			$previous_dependency_handles = array_keys($assets);
+			foreach ($registry->registered as $handle => $asset) {
+				if (isset($assets[$handle])) continue;
+				foreach ($asset->deps as $dependency) unset($assets[$dependency]);
+			}
+		} while ($previous_dependency_handles !== array_keys($assets));
+		$longest = array();
+		$run = array();
+		foreach ($ordered_handles as $handle) {
+			if (!isset($assets[$handle])) {
+				$run = array();
+				continue;
+			}
+			$run[] = $handle;
+			if (count($run) > count($longest)) $longest = $run;
+		}
+		$assets = array_intersect_key($assets, array_fill_keys($longest, true));
+	} while ($previous_handles !== array_keys($assets));
+	return $assets;
+}
+
+function corsivo_theme_replace_enqueued_assets($registry, $handles, $bundle_handle) {
+	$replace = function ($queue) use ($handles, $bundle_handle) {
+		$replaced = array();
+		$inserted = false;
+		foreach ($queue as $handle) {
+			if ($handle === $bundle_handle) continue;
+			if (!in_array(explode('?', $handle)[0], $handles, true)) {
+				$replaced[] = $handle;
+				continue;
+			}
+			if (!$inserted) $replaced[] = $bundle_handle;
+			$inserted = true;
+		}
+		return $replaced;
+	};
+	$registry->queue = $replace($registry->queue);
+	if (!empty($registry->to_do)) $registry->to_do = $replace($registry->to_do);
+	foreach ($handles as $handle) {
+		$registry->registered[$handle]->src = false;
+		$registry->registered[$handle]->deps = array($bundle_handle);
 	}
 }
 
 function corsivo_theme_build_css() {
 	global $wp_styles;
+	$ordered_handles = corsivo_theme_order_enqueued_assets($wp_styles);
+	if (is_wp_error($ordered_handles)) return $ordered_handles;
 
 	$sources = apply_filters('corsivo_theme_css_to_minify', array('/style.css'));
 	$paths = array();
@@ -106,21 +168,22 @@ function corsivo_theme_build_css() {
 	}
 	if (empty($paths)) return new WP_Error('corsivo_theme_css_sources_missing', 'No readable theme stylesheets are available for minification.');
 
-	$handles = array();
-	$dependencies = array();
-	foreach ((array) $wp_styles->queue as $handle) {
-		if (empty($wp_styles->registered[$handle])) continue;
+	$assets = array();
+	foreach ($ordered_handles as $handle) {
 		$style = $wp_styles->registered[$handle];
 		$path = corsivo_theme_resolve_theme_asset($style->src, 'css');
 		if (!$path || !isset($paths[wp_normalize_path($path)])) continue;
-		$handles[] = $handle;
-		foreach ($style->deps as $dependency) {
-			if (!in_array($dependency, $handles, true) && !in_array($dependency, $dependencies, true)) $dependencies[] = $dependency;
-		}
+		if (!empty($style->extra) || !empty($wp_styles->args[$handle])) continue;
+		if (!in_array($style->args, array(null, '', 'all'), true)) continue;
+		$assets[$handle] = array('path' => $path, 'dependencies' => $style->deps);
 	}
-	$dependencies = array_values(array_diff($dependencies, $handles));
+	$assets = corsivo_theme_select_bundle_assets($wp_styles, $assets, $ordered_handles);
+	if (empty($assets)) return new WP_Error('corsivo_theme_css_sources_missing', 'No compatible enqueued theme stylesheets are available for minification.');
+	$handles = array_keys($assets);
+	$dependencies = array();
+	foreach ($assets as $asset) $dependencies = array_merge($dependencies, $asset['dependencies']);
+	$dependencies = array_values(array_diff(array_unique($dependencies), $handles));
 
-	$assets = array_values($paths);
 	$fingerprint = corsivo_theme_asset_fingerprint('css', $assets);
 	$filename = 'corsivo-theme-' . $fingerprint . '.min.css';
 	$location = corsivo_theme_generated_cache_location();
@@ -129,11 +192,10 @@ function corsivo_theme_build_css() {
 
 	if (!file_exists($destination)) {
 		$minifier = new Minify\CSS();
-		foreach ($assets as $path) $minifier->add($path);
+		foreach ($assets as $asset) $minifier->add($asset['path']);
 		$result = corsivo_theme_write_minified_file($minifier, $destination);
 		if (is_wp_error($result)) return $result;
 	}
-	corsivo_theme_prune_asset_cache('css', $filename);
 
 	return array(
 		'url' => trailingslashit($location['url']) . $filename,
@@ -167,38 +229,31 @@ function corsivo_theme_sort_script_assets($assets) {
 
 function corsivo_theme_build_js() {
 	global $wp_scripts;
+	$ordered_handles = corsivo_theme_order_enqueued_assets($wp_scripts);
+	if (is_wp_error($ordered_handles)) return $ordered_handles;
 
 	$assets = array();
-	foreach ((array) $wp_scripts->queue as $handle) {
-		if (empty($wp_scripts->registered[$handle])) continue;
+	foreach ($ordered_handles as $handle) {
 		$script = $wp_scripts->registered[$handle];
 		$path = corsivo_theme_resolve_theme_asset($script->src, 'js');
 		if (!$path) continue;
 		if (empty($script->extra['group'])) continue;
-		if (!empty($script->extra['conditional']) || !empty($script->extra['strategy']) || !empty($script->extra['textdomain'])) continue;
-		if (($script->extra['type'] ?? '') === 'module') continue;
+		if (!empty($script->textdomain) || !empty($wp_scripts->args[$handle])) continue;
+		if (!empty(array_diff_key($script->extra, array('group' => true)))) continue;
 		$assets[$handle] = array('path' => $path, 'dependencies' => $script->deps);
 	}
+	$assets = corsivo_theme_select_bundle_assets($wp_scripts, $assets, $ordered_handles);
 	if (empty($assets)) return new WP_Error('corsivo_theme_js_sources_missing', 'No compatible enqueued theme scripts are available for minification.');
 
 	$handles = corsivo_theme_sort_script_assets($assets);
 	if (is_wp_error($handles)) return $handles;
 	$ordered_assets = array();
 	$dependencies = array();
-	$localized_data = array();
-	$inline_before = array();
-	$inline_after = array();
 	foreach ($handles as $handle) {
 		$ordered_assets[] = $assets[$handle];
 		foreach ($assets[$handle]['dependencies'] as $dependency) {
 			if (!isset($assets[$dependency]) && !in_array($dependency, $dependencies, true)) $dependencies[] = $dependency;
 		}
-		$localized = $wp_scripts->get_data($handle, 'data');
-		if (is_string($localized) && $localized !== '') $localized_data[] = $localized;
-		$before = $wp_scripts->get_data($handle, 'before');
-		if (is_array($before)) $inline_before = array_merge($inline_before, array_filter($before, 'is_string'));
-		$after = $wp_scripts->get_data($handle, 'after');
-		if (is_array($after)) $inline_after = array_merge($inline_after, array_filter($after, 'is_string'));
 	}
 
 	$fingerprint = corsivo_theme_asset_fingerprint('js', $ordered_assets);
@@ -213,15 +268,11 @@ function corsivo_theme_build_js() {
 		$result = corsivo_theme_write_minified_file($minifier, $destination);
 		if (is_wp_error($result)) return $result;
 	}
-	corsivo_theme_prune_asset_cache('js', $filename);
 
 	return array(
 		'url' => trailingslashit($location['url']) . $filename,
 		'version' => $fingerprint,
 		'handles' => $handles,
 		'dependencies' => $dependencies,
-		'localized_data' => $localized_data,
-		'inline_before' => $inline_before,
-		'inline_after' => $inline_after,
 	);
 }

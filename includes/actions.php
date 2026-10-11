@@ -1,6 +1,14 @@
 <?php
 if (!defined('ABSPATH')) exit;
 
+function corsivo_theme_normalize_post_type_query_var($post_type) {
+	if (is_array($post_type)) {
+		$post_type = reset($post_type);
+	}
+
+	return is_string($post_type) ? sanitize_key($post_type) : '';
+}
+
 /**
  * Single source of truth for a CPT archive override.
  * Precedence: archive_page (the page drives URL + path) > plural (text slug) > none.
@@ -8,6 +16,11 @@ if (!defined('ABSPATH')) exit;
  * Returns array{page_id:int, path:string, url:string} or null.
  */
 function corsivo_theme_get_archive_override($post_type, $lang = null) {
+	$post_type = corsivo_theme_normalize_post_type_query_var($post_type);
+	if ($post_type === '') {
+		return null;
+	}
+
 	if (!corsivo_theme_custom_slug_post_type_allowed($post_type)) {
 		return null;
 	}
@@ -70,7 +83,8 @@ function corsivo_theme_flush_on_archive_page_change($post_id, $post_after, $post
         return;
     }
     if ($post_after->post_name === $post_before->post_name
-        && $post_after->post_status === $post_before->post_status) {
+        && $post_after->post_status === $post_before->post_status
+        && (int) $post_after->post_parent === (int) $post_before->post_parent) {
         return;
     }
 
@@ -82,7 +96,9 @@ function corsivo_theme_flush_on_archive_page_change($post_id, $post_after, $post
 	foreach ($corsivo_theme_config['custom_slugs'] as $post_type => $languages) {
 		if (!corsivo_theme_custom_slug_post_type_allowed($post_type) || !is_array($languages)) continue;
 		foreach ($languages as $slugs) {
-			if (is_array($slugs) && isset($slugs['archive_page']) && (int) $slugs['archive_page'] === (int) $post_id) {
+			if (!is_array($slugs) || empty($slugs['archive_page'])) continue;
+			$archive_page_id = (int) $slugs['archive_page'];
+			if ($archive_page_id === (int) $post_id || in_array((int) $post_id, array_map('intval', get_post_ancestors($archive_page_id)), true)) {
                 corsivo_theme_request_rewrite_flush();
                 return;
             }
@@ -164,7 +180,13 @@ function corsivo_theme_register_archive_rewrite_rules() {
 
             $singular = isset($lang_slugs[$lang]['singular']) ? trim((string) $lang_slugs[$lang]['singular']) : '';
             if ($singular !== '' && $singular !== '-' && !corsivo_theme_singular_rewrite_conflicts($singular, $post_type)) {
-                add_rewrite_rule('^' . preg_quote($singular, '/') . '/([^/]+)/?$', 'index.php?' . $post_type . '=$matches[1]', 'top');
+                $post_type_object = get_post_type_object($post_type);
+                if (!$post_type_object) continue;
+                $post_query = $post_type_object->query_var
+                    ? $post_type_object->query_var . '=$matches[1]'
+                    : 'post_type=' . $post_type . '&' . ($post_type_object->hierarchical ? 'pagename' : 'name') . '=$matches[1]';
+                $post_path = $post_type_object->hierarchical ? '(.+?)' : '([^/]+)';
+                add_rewrite_rule('^' . preg_quote($singular, '/') . '/' . $post_path . '/?$', 'index.php?' . $post_query, 'top');
             }
         }
     }
@@ -178,8 +200,9 @@ add_action('init', 'corsivo_theme_register_archive_rewrite_rules');
 function corsivo_theme_archive_page_template( $template ) {
 	if ( ! is_post_type_archive() ) return $template;
 
-	$post_type = get_queried_object()->name ?? get_query_var( 'post_type' );
-	if ( is_array( $post_type ) ) $post_type = $post_type[0] ?? '';
+	$post_type = corsivo_theme_normalize_post_type_query_var(
+		get_queried_object()->name ?? get_query_var( 'post_type' )
+	);
 	if ( ! $post_type ) return $template;
 
 	$archive = corsivo_theme_get_archive_override( $post_type );
@@ -249,10 +272,9 @@ function corsivo_theme_archive_menu_highlight( $classes, $item ) {
 	$page_id   = '';
 
 	if ( is_post_type_archive() ) {
-		$post_type = get_query_var( 'post_type' );
-		if ( is_array( $post_type ) ) $post_type = $post_type[0];
+		$post_type = corsivo_theme_normalize_post_type_query_var( get_query_var( 'post_type' ) );
 	} elseif ( is_singular() && ! empty( $global['cpt_menu_parent'] ) ) {
-		$post_type = get_post_type();
+		$post_type = corsivo_theme_normalize_post_type_query_var( get_post_type() );
 		// Skip built-in types (post/page already handled by WP)
 		if ( in_array( $post_type, array( 'page', 'attachment' ), true ) ) return $classes;
 	}
@@ -300,7 +322,7 @@ function corsivo_theme_handle_missing_cpt_posts() {
         $request_uri   = isset($_SERVER['REQUEST_URI']) ? wp_unslash($_SERVER['REQUEST_URI']) : '';
         $request_path  = (string) wp_parse_url($request_uri, PHP_URL_PATH);
         $request_query = (string) wp_parse_url($request_uri, PHP_URL_QUERY);
-        $post_type     = isset($wp_query->query_vars['post_type']) ? $wp_query->query_vars['post_type'] : null;
+        $post_type     = corsivo_theme_normalize_post_type_query_var($wp_query->query_vars['post_type'] ?? '');
 
         if (!empty($post_type) && isset($corsivo_theme_config['custom_slugs'][$post_type])) {
             $segments = array_values(array_filter(explode('/', $request_path), 'strlen'));
@@ -338,7 +360,10 @@ function corsivo_theme_handle_missing_cpt_posts() {
     if (isset($wp_query->is_archive) && $wp_query->is_archive
         && isset($wp_query->query) && isset($wp_query->query['post_type']) && $wp_query->query['post_type']) {
 
-        $post_type = $wp_query->query['post_type'];
+        $post_type = corsivo_theme_normalize_post_type_query_var($wp_query->query['post_type']);
+		if ($post_type === '') {
+			return;
+		}
 
         $archive = corsivo_theme_get_archive_override($post_type, $current_lang);
         if (!$archive) {

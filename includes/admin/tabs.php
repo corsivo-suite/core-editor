@@ -95,7 +95,7 @@ function corsivo_theme_global_settings_render($settings) {
 				<tr>
 					<th scope="row">
 						<label for="corsivo-theme-force-style-injection">Force Style Injection</label>
-						<span class="dashicons dashicons-info-outline corsivo-theme-tooltip" title="Always print Theme / theme.json preset CSS variables, utility classes, and font-face declarations on the frontend, even when Gutenberg would skip them because the matching block is not present on the page."></span>
+						<span class="dashicons dashicons-info-outline corsivo-theme-tooltip" title="Always print Theme / theme.json preset CSS variables and utility classes on the frontend, even when Gutenberg would skip them because the matching block is not present on the page. Font faces remain owned by WordPress core."></span>
 					</th>
 					<td>
 						<input type="checkbox" name="corsivo-theme-force-style-injection" id="corsivo-theme-force-style-injection" <?= !empty($global['force_style_injection']) ? 'checked' : '' ?>>

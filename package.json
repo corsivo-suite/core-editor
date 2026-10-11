@@ -1,0 +1,27 @@
+{
+  "name": "corsivo-theme-editor",
+  "version": "1.4.0",
+  "private": true,
+  "files": [
+    "assets",
+    "changelog.txt",
+    "configurator/build",
+    "corsivo-theme-editor.php",
+    "includes",
+    "LICENSE",
+    "README.md",
+    "style.css",
+    "template-sample.php",
+    "templates",
+    "THIRD_PARTY_NOTICES.md",
+    "uninstall.php"
+  ],
+  "scripts": {
+    "build": "npm --prefix configurator run build",
+    "check": "npm run lint && npm test && npm run test:php && npm run build",
+    "lint": "npm --prefix configurator run lint",
+    "package": "node configurator/node_modules/@wordpress/scripts/bin/wp-scripts.js plugin-zip",
+    "test": "npm --prefix configurator test -- --runInBand",
+    "test:php": "php tests/storage-static.php && php tests/security-regressions.php && php tests/backend-regressions.php && php tests/minify-regressions.php && php tests/configurator-assets.php && php tests/admin-navigation.php"
+  }
+}

@@ -1,6 +1,6 @@
 {
   "name": "corsivo-theme-configurator",
-  "version": "1.0.0",
+  "version": "1.4.0",
   "private": true,
   "description": "Corsivo Theme admin configurator",
   "license": "GPL-2.0-or-later",
@@ -9,8 +9,8 @@
     "build": "wp-scripts build",
     "check": "npm run lint && npm test -- --runInBand && npm run build",
     "lint": "npm run lint:js && npm run lint:style",
-    "lint:js": "wp-scripts lint-js src/adminUiTranslations.js src/collectionAdapters.js src/collectionAdapters.test.js src/configAdapter.js src/configAdapter.test.js src/components/Breakpoints/BreakpointsTab.jsx src/components/Colors/ColorsTab.jsx src/components/FunctionalPages/FunctionalPagesTab.jsx src/components/Spacing/SpacingTab.jsx src/components/Templates/TemplateCollections.jsx",
-    "lint:style": "wp-scripts lint-style src/admin-ui.scss",
+    "lint:js": "wp-scripts lint-js src",
+    "lint:style": "wp-scripts lint-style \"src/**/*.scss\"",
     "start": "wp-scripts start",
     "test": "wp-scripts test-unit-js"
   },

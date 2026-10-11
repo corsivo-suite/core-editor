@@ -12,23 +12,25 @@ Dare al tema attivo un design system editabile dall'admin senza toccare i file d
 
 **Doppio canale dati** — ogni sezione ha un filtro (`corsivo_theme_fonts`, `corsivo_theme_colors`, `corsivo_theme_breakpoints`, `corsivo_theme_spacing`, `corsivo_theme_global_styles`, `corsivo_theme_style_templates`, `corsivo_theme_context_styles`, `corsivo_theme_core_components`, `corsivo_theme_custom_fonts`, `corsivo_theme_install_fonts`, `corsivo_theme_pages`): il tema fornisce i dati a priorità 10, a priorità 20 la sezione corrispondente del file config, se non vuota, li sostituisce.
 
-**Applicazione runtime, nessun file generato nel tema** — (1) il filtro `wp_theme_json_data_theme` inietta palette, `fontFamilies` con `fontFace`, layout (`contentSize`/`wideSize`), `spacingSizes`, `blockGap`, stili globali body/heading/link e le variazioni di stile dei blocchi (CSS parsato in struttura theme.json, con risoluzione della catena `inherits` e pseudo-stati); (2) CSS inline accodato a `wp_enqueue_scripts` (98/99) per titoli di pagina, blocchi default, template di contesto e componenti core; (3) Google Fonts come `<link>` asincroni con preconnect, `@font-face` self-hosted e font features in `wp_head`.
+**Applicazione runtime, nessun file generato nel tema** — (1) il filtro `wp_theme_json_data_theme` inietta palette, `fontFamilies` con `fontFace`, layout (`contentSize`/`wideSize`), `spacingSizes`, `blockGap`, stili globali body/heading/link e le variazioni di stile dei blocchi (CSS parsato in struttura theme.json, con risoluzione della catena `inherits` e pseudo-stati); (2) CSS inline accodato a `wp_enqueue_scripts` (98/99) per titoli di pagina, blocchi default, template di contesto e componenti core; (3) Google Fonts come `<link>` asincroni con preconnect e font self-hosted emessi dal runtime `fontFace` core, comprese le OpenType features.
 
 **Style template e contesti** — i template si assegnano ai contesti (`home`/`blog`, `page`, `single-{cpt}`, `post-type-archive-{cpt}`, `page-template-{slug}`, più i contesti WooCommerce quando attivi) con specificità deterministica: page template > home > single > archivio > page > custom. Risoluzione per post: meta `_corsivo_theme_style_template` (pannello sidebar nell'editor) > assegnazione di contesto > template default. `body_class` aggiunge `corsivo-theme-template-{slug}`; nell'editor lo stesso CSS viene iniettato nell'iframe.
 
-**Scrittura** — REST `corsivo/v1/theme-config/` (`config` GET/POST, `rebuild`, `upload-font`, `theme-fonts`; tutte `manage_options`) e form PHP della pagina impostazioni. Il file viene sostituito sotto lock con controllo di revisione (hash sha256, conflitto 409 se un'altra sessione ha salvato), scrittura atomica verificata dopo il replace e backup `.bak` ripristinabile dall'admin. JSON corrotto = salvataggio disabilitato (fail-closed) con notice e pulsante di restore.
+**Scrittura** — REST `corsivo/v1/theme-config/` (`config` GET/POST, `rebuild`, `upload-font`, `theme-fonts`, `pages`; tutte `manage_options`) e form PHP della pagina impostazioni. `pages` espone ricerca paginata per lingua e hydration degli ID selezionati, senza serializzare l'intero archivio nel bootstrap. Il file viene sostituito sotto lock con controllo di revisione (hash sha256, conflitto 409 se un'altra sessione ha salvato), scrittura atomica verificata dopo il replace e backup `.bak` ripristinabile dall'admin. JSON corrotto = salvataggio disabilitato (fail-closed) con notice e pulsante di restore.
 
 **Registro attività** — tabella `{prefix}corsivo_theme_activity_log` (InnoDB): data GMT, request id, utente, sorgente (cli/rest/ajax/admin/frontend), evento, stato, summary, dettagli JSON con limiti e path redatti (`[site]/`, `[content]/`), hash prima/dopo della configurazione. Registra salvataggi, rebuild, restore, export, upload font, integrazioni, errori di minificazione.
+
+**Rinomina dei template** — il POST `config` accetta `template_renames`, una mappa dal vecchio slug al nuovo, separata dalla configurazione persistita. La mappa deve riferirsi a template esistenti prima del salvataggio e presenti nella nuova configurazione, con destinazioni univoche; sono ammessi scambi di slug. Dopo la scrittura verificata, sotto lo stesso lock, vengono migrate le assegnazioni `_corsivo_theme_style_template`; le assegnazioni ai template effettivamente eliminati vengono rimosse. I client che rinominano uno slug devono inviare questa mappa per conservare le assegnazioni ai contenuti.
 
 ## Punti rilevanti
 
 - Storage del registro con schema verificato fisicamente (engine, colonne, indici confrontati con l'atteso) e attestato nelle opzioni; installazione fresh-only serializzata con lock MySQL. Una tabella completa e fisicamente esatta viene riattestata anche se contiene già dati, senza riscriverli; su schema incoerente il plugin è fail-closed, il log rifiuta le scritture e l'admin mostra l'errore.
 - Config sanitizzata in profondità: le dichiarazioni CSS non possono contenere selettori (`{}`, `@import`, `expression(`, `javascript:` rifiutati), gli slug devono essere unici (`corsivo_theme_duplicate_slug`), i formati non correnti vengono respinti (`corsivo_theme_unsupported_config_format`) — il file è current-format-only.
 - Upload font validati sui magic byte (woff/woff2/otf/ttf), destinazione `wp_get_font_dir()` con fallback a `{tema}/fonts`; i MIME font sono ammessi solo per `manage_options`.
-- Minificazione opzionale CSS/JS in cache fingerprintata sotto `uploads/corsivo-theme-editor/cache/` — i sorgenti del tema non vengono mai modificati.
+- Minificazione opzionale CSS/JS in cache fingerprintata sotto `uploads/corsivo-theme-editor/cache/`, preservando ordine e dipendenze. Gli asset con inline, traduzioni, media o strategie incompatibili restano gestiti da WordPress. I bundle precedenti rimangono disponibili fra richieste e salvataggi della configurazione; il rebuild esplicito pulisce la cache generata. I sorgenti del tema non vengono mai modificati.
 - Retention del log: cron giornaliero, 1–3650 giorni (default 90), 100–100000 voci (default 2000); gli utenti cancellati vengono anonimizzati. Log disattivabile da admin.
 - Multisite gestito per sito in attivazione, disattivazione e uninstall; l'uninstall rimuove tabella e opzioni del registro.
-- Il runtime PHP resta standalone; lo sviluppo del configuratore usa il package privato `@corsivo-suite/wp-admin-ui` alla versione esatta `0.1.0`. Requisiti WordPress 6.6+, PHP 8.1+. Versione 1.3.5.
+- Il runtime PHP resta standalone; lo sviluppo del configuratore usa il package privato `@corsivo-suite/wp-admin-ui` alla versione esatta `0.1.0`. Requisiti WordPress 6.6+, PHP 8.1+. Versione 1.4.0.
 
 ## Integrazioni con la suite
 
@@ -41,11 +43,16 @@ Dare al tema attivo un design system editabile dall'admin senza toccare i file d
 ## Test
 
 ```bash
+npm run check
+npm run package
 wp eval-file wp-content/plugins/corsivo-theme-editor/tests/runtime-smoke.php
-php wp-content/plugins/corsivo-theme-editor/tests/storage-static.php
+wp eval-file wp-content/plugins/corsivo-theme-editor/tests/runtime-regressions.php
+wp eval-file wp-content/plugins/corsivo-theme-editor/tests/configurator-output-smoke.php
 ```
 
-Il runtime smoke (WP-CLI, plugin attivo) verifica schema e prontezza del registro, sanitizer della config, guardie CSS e slug duplicati, rifiuto dei formati non correnti, lock e conflitti di revisione, backup e verifica post-scrittura, scope dei font e merge dei `fontFace` in theme.json. Lo static check (PHP puro) pretende l'assenza di installer lazy e il contratto dello storage current-only.
+I comandi npm vanno eseguiti dalla root del plugin con le dipendenze del configuratore installate. `check` esegue lint, test React, `test:php` e build; `package` crea lo ZIP distribuibile, inclusi `assets/` e `templates/`. `test:php` richiede PHP nel PATH e copre storage, sicurezza, rinomine e validazione backend, minificazione, asset e navigazione amministrativa.
+
+Il runtime smoke (WP-CLI, plugin attivo) verifica schema e prontezza del registro, sanitizer della config, guardie CSS e slug duplicati, rifiuto dei formati non correnti, lock e conflitti di revisione, backup e verifica post-scrittura, scope dei font e merge dei `fontFace` in theme.json. Le regressioni runtime verificano anche proxy archivio, Query Loop ereditato, paginazione, footer e lock del writer; lo smoke output controlla il CSS generato. Lo static check pretende l'assenza di installer lazy e il contratto dello storage current-only.
 
 ## Configurazione
 
@@ -125,6 +132,11 @@ I sorgenti del configuratore e gli artefatti `configurator/build/` sono entrambi
 | `configurator/build/index.asset.php` | Manifest WordPress di dipendenze e versione del bundle. |
 | `tests/runtime-smoke.php` | Smoke E2E in WordPress su storage, config, lock, font e theme.json. |
 | `tests/storage-static.php` | Guardie statiche sul contratto current-only dello storage. |
+| `tests/security-regressions.php` | Regressioni isolate su CSS, pagine funzionali e minificazione. |
+| `tests/backend-regressions.php` | Regressioni isolate su validazione, rinomine dei template, metadati e rewrite. |
+| `tests/minify-regressions.php` | Regressioni su cache, ordine, dipendenze e selezione degli asset minificabili. |
+| `tests/runtime-regressions.php` | Fixture WordPress per archivi, Query Loop, paginazione, footer e lock del writer. |
+| `tests/admin-navigation.php` | Verifiche statiche della navigazione amministrativa. |
 | `tests/configurator-assets.php` | Verifica statica di dipendenza privata, manifest e asset LTR/RTL del configuratore. |
 | `tests/configurator-output-smoke.php` | Snapshot smoke dell'output CSS generato per breakpoint e contesti. |
 | `uninstall.php` | Rimozione multisite-safe del registro e delle opzioni possedute. |

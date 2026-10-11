@@ -4,6 +4,10 @@ if (!defined('ABSPATH')) exit;
 global $wpdb;
 
 $checks = array();
+$checks['post_type_normalization'] = corsivo_theme_normalize_post_type_query_var('product') === 'product'
+	&& corsivo_theme_normalize_post_type_query_var(array('product', 'post')) === 'product'
+	&& corsivo_theme_normalize_post_type_query_var(array()) === ''
+	&& corsivo_theme_normalize_post_type_query_var(null) === '';
 $maintenance_result = corsivo_theme_activity_schema_maintenance(true, true);
 $checks['activity_storage_maintenance'] = $maintenance_result === true;
 $table = corsivo_theme_activity_log_table();
@@ -457,9 +461,10 @@ $test_install_fonts = function () {
 	return array(array(
 		'font-family' => 'Roboto',
 		'varname' => 'roboto',
-		'font-weight' => array('400' => 'https://example.com/roboto.woff2'),
-		'font-style' => array('italic' => 'https://example.com/roboto-italic.woff2'),
+		'font-weight' => array('400' => 'file:./assets/fonts/roboto.woff2'),
+		'font-style' => array('italic' => 'file:./assets/fonts/roboto-italic.woff2'),
 		'font-style-weight' => array('italic' => '300 700'),
+		'features' => array('liga', 'kern'),
 	));
 };
 add_filter('corsivo_theme_colors', $test_colors, 1000);
@@ -485,19 +490,66 @@ $roboto_families = array_values(array_filter(
 	}
 ));
 $roboto_faces = $roboto_families[0]['fontFace'] ?? array();
+$roboto_sources = array_merge(...array_map(function ($font_face) {
+	return $font_face['src'] ?? array();
+}, $roboto_faces));
 $roboto_italic_faces = array_values(array_filter($roboto_faces, function ($font_face) {
 	return ($font_face['fontStyle'] ?? '') === 'italic';
 }));
 $checks['font_face_merge'] = count($roboto_families) === 1
 	&& count($roboto_faces) === 2
+	&& count(array_filter($roboto_sources, function ($source) {
+		return strpos($source, 'file:./') === 0;
+	})) === 2
 	&& count($roboto_italic_faces) === 1
-	&& ($roboto_italic_faces[0]['fontWeight'] ?? '') === '300 700';
+	&& ($roboto_italic_faces[0]['fontWeight'] ?? '') === '300 700'
+	&& ($roboto_italic_faces[0]['fontFeatureSettings'] ?? '') === '"liga","kern"';
 
 $scope_test_slug = 'font-corsivo-scope-smoke';
 corsivo_theme_register_font_style(array('slug' => 'corsivo-scope-smoke', 'scope' => 'heading'), 'Scope Smoke');
 $block_style_registry = WP_Block_Styles_Registry::get_instance();
 $checks['font_scope'] = $block_style_registry->is_registered('core/heading', $scope_test_slug)
 	&& !$block_style_registry->is_registered('core/paragraph', $scope_test_slug);
+
+$administrator_id = get_current_user_id();
+$administrator_can_search_pages = corsivo_theme_configurator_permissions_check();
+wp_set_current_user(0);
+$anonymous_can_search_pages = corsivo_theme_configurator_permissions_check();
+wp_set_current_user($administrator_id);
+$checks['page_search_capability'] = $administrator_can_search_pages && !$anonymous_can_search_pages;
+
+$page_search_token = 'corsivo-search-' . strtolower(wp_generate_password(8, false, false));
+$published_page_ids = array(
+	wp_insert_post(array('post_type' => 'page', 'post_status' => 'publish', 'post_title' => $page_search_token . ' Alpha')),
+	wp_insert_post(array('post_type' => 'page', 'post_status' => 'publish', 'post_title' => $page_search_token . ' Beta')),
+);
+$draft_page_id = wp_insert_post(array(
+	'post_type' => 'page',
+	'post_status' => 'draft',
+	'post_title' => $page_search_token . ' Draft',
+));
+$search_request = new WP_REST_Request('GET');
+$search_request->set_param('search', $page_search_token);
+$search_request->set_param('page', 1);
+$search_request->set_param('per_page', 1);
+$search_response = corsivo_theme_search_configurator_pages($search_request);
+$search_data = $search_response->get_data();
+$checks['page_search_pagination'] = count($search_data['items'] ?? array()) === 1
+	&& ($search_data['total'] ?? 0) === 2
+	&& ($search_data['totalPages'] ?? 0) === 2;
+
+$hydrate_request = new WP_REST_Request('GET');
+$hydrate_request->set_param('include', implode(',', array_merge($published_page_ids, array($draft_page_id))));
+$hydrate_response = corsivo_theme_search_configurator_pages($hydrate_request);
+$hydrate_ids = array_column($hydrate_response->get_data()['items'] ?? array(), 'id');
+sort($hydrate_ids);
+$expected_hydrate_ids = $published_page_ids;
+sort($expected_hydrate_ids);
+$checks['page_search_hydration'] = $hydrate_ids === $expected_hydrate_ids;
+
+foreach (array_merge($published_page_ids, array($draft_page_id)) as $page_id) {
+	wp_delete_post($page_id, true);
+}
 
 $test_directory = trailingslashit(sys_get_temp_dir()) . 'corsivo-theme-' . wp_generate_password(12, false, false);
 $test_settings_path = trailingslashit($test_directory) . 'corsivo-theme.json';

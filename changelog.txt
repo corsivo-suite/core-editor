@@ -1,4 +1,27 @@
-= Unreleased — 01/08/2026 =
+= Non rilasciato — 11/10/2026 =
+* includes/rest-api-configurator.php e includes/admin/settings.php: rinomina dei template con migrazione delle assegnazioni sotto lock della configurazione, gestione di scambi, eliminazioni e collisioni; custom properties CSS con case preservato e payload malformati respinti con 400.
+* includes/rest-api-configurator.php e includes/admin/settings.php: preservati i range dei pesi dei variable font; revisione e audit derivati dal salvataggio verificato sotto lock, senza riletture esposte a scritture concorrenti.
+* configurator/src/collectionAdapters.js, configAdapter.js e components/Templates/TemplateCollections.jsx: riferimenti conservati durante l'editing degli slug, rinomine esplicite nel salvataggio e scelta dello slug manuale mantenuta al reload.
+* configurator/src/store.js e components/InstalledFonts/InstalledFontsTab.jsx: upload associato all'identità della famiglia senza perdere modifiche concorrenti o ripristinare famiglie eliminate; revisione sincronizzata con il form PHP.
+* package.json: inclusi assets/ e templates/ nella distribuzione; aggiunti test:php e regressioni PHP al comando check.
+* includes/actions.php e templates/archive-page-proxy.php: rewrite compatibili con query_var personalizzata o disattivata, flush per spostamenti della pagina archivio e dei suoi antenati, Query Loop ereditato e paginazione eseguiti nel contesto dell'archivio.
+* includes/rest-api.php e corsivo-theme-editor.php: rendering REST nel contesto del post e colori footer con trasparenza validata.
+* includes/minify.php e includes/settings.php: esclusi asset con inline, traduzioni, media o strategie incompatibili; preservati ordine e dipendenze senza doppia esecuzione. Bundle conservati fra richieste e salvataggi, pulizia riservata al rebuild esplicito.
+* tests/backend-regressions.php, tests/minify-regressions.php e tests/runtime-regressions.php: regressioni backend, dipendenze e cache, proxy archivio, footer e lock del writer; estese le regressioni React nei test del configuratore.
+* Versione mantenuta a 1.4.0; conservate le precedenti note non rilasciate.
+
+= Non rilasciato — 25/09/2026 =
+* includes/rest-api-configurator.php: rifiuto di < nelle dichiarazioni CSS.
+* includes/functions.php: protezione dei sei inserimenti CSS dalla chiusura del tag style; pagine funzionali limitate a stati pubblici e password soddisfatta.
+* includes/minify.php: URL relativi risolti rispetto alla destinazione, mantenendo la scrittura atomica.
+* tests/security-regressions.php: regressioni CSS, pagine funzionali e minificazione.
+* Regressioni isolate superate su PHP 8.1 e 8.4. Nessun bump di versione.
+
+= 1.4.0 — 29/08/2026 =
+* Sostituito il bootstrap completo delle pagine nel configuratore con ricerca REST paginata per lingua e hydration degli ID selezionati.
+* Normalizzato `post_type` per query string, array o assente in tutti i percorsi di redirect e riscrittura degli archivi.
+* Affidata a `fontFace` core anche l'emissione di `font-feature-settings`, eliminando la seconda stampa CSS degli stessi font.
+* Estesi lint e test all'intero sorgente JS/SCSS, aggiunti test delle API pagine e CI su PHP 8.1/8.4 e Node 20 con build e pacchetto verificati.
 * Rigenerati i bundle contro il package condiviso corrente, includendo il refresh visuale e gli asset RTL; contratti runtime invariati.
 * Nascosta ai non-developer la voce `Impostazioni > Theme` tramite la capability virtuale condivisa, mantenendo pagina, URL diretto e capability originali invariati.
 * Resa la palette di Corsivo Theme l'unica fonte di verità nell'editor, disattivando i preset colore core che nascondevano gli slug `black` e `white`.

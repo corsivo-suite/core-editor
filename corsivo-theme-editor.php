@@ -3,10 +3,10 @@
 		* @wordpress-plugin
 		* Plugin Name:       Corsivo Theme
 		* Description:       A visual design system configurator for WordPress themes. Manages fonts, colors, breakpoints, and generates theme.json + CSS from a JSON config.
-		* Version:           1.3.5
+		* Version:           1.4.0
 		* Author:            Salvatore Corsi
 		* Author URI:        https://salvatorecorsi.com
-		* Plugin URI:        https://github.com/salvatorecorsi/corsivo-theme-editor
+		* Plugin URI:        https://github.com/corsivo-suite/theme-editor
 		* License:           GPL-2.0-or-later
 		* License URI:       https://www.gnu.org/licenses/gpl-2.0.html
 		* Text Domain:       corsivo-theme-editor
@@ -17,7 +17,7 @@
 
 	if (!defined('ABSPATH')) exit;
 
-	define('CORSIVO_THEME_EDITOR_VERSION', '1.3.5');
+	define('CORSIVO_THEME_EDITOR_VERSION', '1.4.0');
 	define('CORSIVO_THEME_EDITOR_FILE', __FILE__);
 	define('CORSIVO_THEME_EDITOR_DIR', plugin_dir_path(__FILE__));
 
@@ -131,6 +131,19 @@
 		echo apply_filters( 'the_content', $page->post_content );
 	}
 
+	function corsivo_theme_sanitize_footer_color($color) {
+		if (!is_string($color)) return '';
+		$color = trim($color);
+		if (preg_match('/^#(?:[a-f0-9]{3}|[a-f0-9]{4}|[a-f0-9]{6}|[a-f0-9]{8})$/iD', $color)) return strtolower($color);
+		if ($color === 'transparent') return $color;
+		if (!preg_match('/^(rgba?)\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(\d*\.?\d+))?\s*\)$/iD', $color, $channels)) return '';
+		if (max((int) $channels[2], (int) $channels[3], (int) $channels[4]) > 255) return '';
+		$has_alpha = isset($channels[5]);
+		if ((strtolower($channels[1]) === 'rgba') !== $has_alpha) return '';
+		if ($has_alpha && (float) $channels[5] > 1) return '';
+		return strtolower($channels[1]) . '(' . implode(', ', array_slice($channels, 2)) . ')';
+	}
+
 	// Hide footer page from admin pages list
 	add_action( 'pre_get_posts', function ( $query ) {
 		if ( ! is_admin() || ! $query->is_main_query() ) return;
@@ -173,9 +186,9 @@
 		if ( ! $footer_id ) return;
 
 		$bg_slug    = sanitize_title( get_post_meta( $footer_id, '_corsivo_theme_footer_bg_slug', true ) );
-		$bg_hex     = sanitize_hex_color( get_post_meta( $footer_id, '_corsivo_theme_footer_bg', true ) );
+		$bg_hex     = corsivo_theme_sanitize_footer_color( get_post_meta( $footer_id, '_corsivo_theme_footer_bg', true ) );
 		$color_slug = sanitize_title( get_post_meta( $footer_id, '_corsivo_theme_footer_color_slug', true ) );
-		$color_hex  = sanitize_hex_color( get_post_meta( $footer_id, '_corsivo_theme_footer_color', true ) );
+		$color_hex  = corsivo_theme_sanitize_footer_color( get_post_meta( $footer_id, '_corsivo_theme_footer_color', true ) );
 
 		if ( ! $bg_slug && ! $bg_hex && ! $color_slug && ! $color_hex ) return;
 
@@ -204,7 +217,7 @@
 			'default'       => '',
 			'auth_callback' => function ( $allowed, $meta_key, $post_id ) { return current_user_can( 'edit_post', $post_id ); },
 		);
-		$hex_args = array_merge($meta_args, array('sanitize_callback' => 'sanitize_hex_color'));
+		$hex_args = array_merge($meta_args, array('sanitize_callback' => 'corsivo_theme_sanitize_footer_color'));
 		$slug_args = array_merge($meta_args, array('sanitize_callback' => 'sanitize_title'));
 		register_post_meta( 'page', '_corsivo_theme_footer_bg', $hex_args );
 		register_post_meta( 'page', '_corsivo_theme_footer_bg_slug', $slug_args );

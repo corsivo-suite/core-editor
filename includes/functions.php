@@ -366,6 +366,22 @@ if (!defined('ABSPATH')) exit;
 		return $result;
 	}
 
+	function corsivo_theme_font_feature_settings($features) {
+		if (!is_array($features)) {
+			return '';
+		}
+
+		$settings = array();
+		foreach ($features as $feature) {
+			$feature = preg_replace('/[^a-z0-9]/i', '', (string) $feature);
+			if ($feature !== '') {
+				$settings[] = '"' . strtolower($feature) . '"';
+			}
+		}
+
+		return implode(',', array_values(array_unique($settings)));
+	}
+
 	function corsivo_theme_build_install_font_faces($font) {
 		if (!is_array($font) || empty($font['font-family'])) {
 			return array();
@@ -376,6 +392,7 @@ if (!defined('ABSPATH')) exit;
 		$style_weights = !empty($font['font-style-weight']) && is_array($font['font-style-weight'])
 			? $font['font-style-weight']
 			: array();
+		$font_feature_settings = corsivo_theme_font_feature_settings($font['features'] ?? array());
 
 		if (!empty($font['font-weight']) && is_array($font['font-weight'])) {
 			foreach ($font['font-weight'] as $weight => $url) {
@@ -388,6 +405,9 @@ if (!defined('ABSPATH')) exit;
 				);
 				if ($font_display) {
 					$face['fontDisplay'] = $font_display;
+				}
+				if ($font_feature_settings) {
+					$face['fontFeatureSettings'] = $font_feature_settings;
 				}
 				$font_faces[] = $face;
 			}
@@ -407,6 +427,9 @@ if (!defined('ABSPATH')) exit;
 				);
 				if ($font_display) {
 					$face['fontDisplay'] = $font_display;
+				}
+				if ($font_feature_settings) {
+					$face['fontFeatureSettings'] = $font_feature_settings;
 				}
 				$font_faces[] = $face;
 			}
@@ -1491,7 +1514,7 @@ if (!defined('ABSPATH')) exit;
 
 		wp_register_style('corsivo-theme-global-styles', false);
 		wp_enqueue_style('corsivo-theme-global-styles');
-		wp_add_inline_style('corsivo-theme-global-styles', $css);
+		wp_add_inline_style('corsivo-theme-global-styles', corsivo_theme_sanitize_css_block($css));
 	}
 	add_action('wp_enqueue_scripts', 'corsivo_theme_enqueue_global_styles', 99);
 
@@ -1583,28 +1606,8 @@ if (!defined('ABSPATH')) exit;
 		return !empty($global['force_style_injection']);
 	}
 
-	/**
-	 * Quote a CSS string value.
-	 */
-	function corsivo_theme_css_string($value) {
-		return '"' . str_replace(array('\\', '"'), array('\\\\', '\"'), (string) $value) . '"';
-	}
-
-	/**
-	 * Defang user-authored CSS before it is printed inside a <style> block:
-	 * strip any closing-tag sequence so it cannot break out of the style context.
-	 * CSS never legitimately contains '</'.
-	 */
 	function corsivo_theme_sanitize_css_block($css) {
-		return str_ireplace('</', '', (string) $css);
-	}
-
-	function corsivo_theme_resolve_font_source_url($source) {
-		$source = (string) $source;
-		if (str_starts_with($source, 'file:./')) {
-			return get_theme_file_uri(substr($source, strlen('file:./')));
-		}
-		return $source;
+		return str_replace('</', '\\3c /', (string) $css);
 	}
 
 	/**
@@ -1646,151 +1649,6 @@ if (!defined('ABSPATH')) exit;
 
 		$data = $theme_data->get_data();
 		return is_array($data) ? $data : array();
-	}
-
-	/**
-	 * Generate @font-face rules from merged theme.json fontFamilies.
-	 *
-	 * Augments each @font-face with `font-feature-settings` when the matching
-	 * install_fonts entry declares a non-empty `features` array.
-	 */
-	function corsivo_theme_generate_forced_font_face_css($font_families) {
-		$css = '';
-
-		$features_by_family = corsivo_theme_get_install_font_features_map();
-		$format_by_family = corsivo_theme_get_install_font_format_map();
-
-		foreach ($font_families as $family) {
-			if (empty($family['fontFace']) || !is_array($family['fontFace'])) continue;
-
-			foreach ($family['fontFace'] as $face) {
-				if (empty($face['fontFamily']) || empty($face['src'])) continue;
-
-				$family_key = corsivo_theme_normalize_font_family_key($face['fontFamily']);
-				$declared_format = isset($format_by_family[$family_key]) ? $format_by_family[$family_key] : '';
-
-				$sources = is_array($face['src']) ? $face['src'] : array($face['src']);
-				$src_rules = array();
-
-				foreach ($sources as $src) {
-					if (empty($src) || !is_string($src)) continue;
-					$src_url = esc_url_raw(corsivo_theme_resolve_font_source_url($src));
-					if (empty($src_url)) continue;
-
-					// Map the file extension to a valid CSS format() keyword
-					// (ttf->truetype, otf->opentype); fall back to the format
-					// declared on the install-font entry for extensionless URLs.
-					$format = '';
-					$path = wp_parse_url($src_url, PHP_URL_PATH);
-					$keyword = '';
-					if ($path) {
-						$ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-						$keyword = corsivo_theme_normalize_font_format($ext);
-					}
-					if (!$keyword && $declared_format) {
-						$keyword = $declared_format;
-					}
-					if ($keyword) {
-						$format = ' format(' . corsivo_theme_css_string($keyword) . ')';
-					}
-
-					$src_rules[] = 'url(' . corsivo_theme_css_string($src_url) . ')' . $format;
-				}
-
-				if (empty($src_rules)) continue;
-
-				$font_style = !empty($face['fontStyle']) ? sanitize_key($face['fontStyle']) : 'normal';
-				$font_weight = !empty($face['fontWeight']) ? preg_replace('/[^0-9A-Za-z -]/', '', (string) $face['fontWeight']) : '400';
-				$font_display = !empty($face['fontDisplay']) ? sanitize_key($face['fontDisplay']) : '';
-
-				$features = isset($features_by_family[$family_key]) ? $features_by_family[$family_key] : array();
-
-				$css .= '@font-face{';
-				$css .= 'font-family:' . corsivo_theme_css_string($face['fontFamily']) . ';';
-				$css .= 'font-style:' . $font_style . ';';
-				$css .= 'font-weight:' . $font_weight . ';';
-				if ($font_display) {
-					$css .= 'font-display:' . $font_display . ';';
-				}
-				$css .= 'src:' . implode(',', $src_rules) . ';';
-				if (!empty($features)) {
-					$css .= 'font-feature-settings:' . corsivo_theme_format_font_feature_settings($features) . ';';
-				}
-				$css .= '}' . "\n";
-			}
-		}
-
-		return $css;
-	}
-
-	/**
-	 * Build a map { normalized_family_name => [feature tag, ...] } from install_fonts.
-	 */
-	function corsivo_theme_get_install_font_features_map() {
-		$map = array();
-		$install_fonts = apply_filters('corsivo_theme_install_fonts', array());
-		if (!is_array($install_fonts)) return $map;
-
-		foreach ($install_fonts as $entry) {
-			if (empty($entry['font-family']) || empty($entry['features'])) continue;
-			if (!is_array($entry['features'])) continue;
-
-			$tags = array();
-			foreach ($entry['features'] as $tag) {
-				if (!is_string($tag)) continue;
-				$clean = preg_replace('/[^a-z0-9]/i', '', $tag);
-				if ($clean === '') continue;
-				$tags[] = strtolower($clean);
-			}
-			if (empty($tags)) continue;
-
-			$map[corsivo_theme_normalize_font_family_key($entry['font-family'])] = array_values(array_unique($tags));
-		}
-
-		return $map;
-	}
-
-	function corsivo_theme_normalize_font_family_key($family) {
-		return strtolower(trim(str_replace(array('"', "'"), '', (string) $family)));
-	}
-
-	/**
-	 * Normalize a font format token to a valid CSS format() keyword.
-	 * ttf -> truetype, otf -> opentype; woff/woff2 pass through.
-	 */
-	function corsivo_theme_normalize_font_format($format) {
-		$format = strtolower(trim((string) $format));
-		$aliases = array('ttf' => 'truetype', 'otf' => 'opentype');
-		if (isset($aliases[$format])) return $aliases[$format];
-		$valid = array('woff', 'woff2', 'truetype', 'opentype', 'collection', 'embedded-opentype', 'svg');
-		return in_array($format, $valid, true) ? $format : '';
-	}
-
-	/**
-	 * Build a map { normalized_family_name => css format keyword } from
-	 * install_fonts, so extensionless src URLs can still emit a correct format().
-	 */
-	function corsivo_theme_get_install_font_format_map() {
-		$map = array();
-		$install_fonts = apply_filters('corsivo_theme_install_fonts', array());
-		if (!is_array($install_fonts)) return $map;
-
-		foreach ($install_fonts as $entry) {
-			if (empty($entry['font-family']) || empty($entry['format'])) continue;
-			$keyword = corsivo_theme_normalize_font_format($entry['format']);
-			if ($keyword === '') continue;
-			$map[corsivo_theme_normalize_font_family_key($entry['font-family'])] = $keyword;
-		}
-
-		return $map;
-	}
-
-	function corsivo_theme_format_font_feature_settings($tags) {
-		$parts = array();
-		foreach ($tags as $tag) {
-			$parts[] = '"' . $tag . '"';
-		}
-		return implode(',', $parts);
 	}
 
 	/**
@@ -1846,7 +1704,7 @@ if (!defined('ABSPATH')) exit;
 			$vars['global-wide-size'] = '--wp--style--global--wide-size:' . trim((string) $settings['layout']['wideSize']) . ';';
 		}
 
-		$css = corsivo_theme_generate_forced_font_face_css($font_families);
+		$css = '';
 		if (!empty($vars)) {
 			$css .= ':root{' . implode('', $vars) . '}' . "\n";
 		}
@@ -1866,46 +1724,9 @@ if (!defined('ABSPATH')) exit;
 
 		wp_register_style('corsivo-theme-forced-styles', false);
 		wp_enqueue_style('corsivo-theme-forced-styles');
-		wp_add_inline_style('corsivo-theme-forced-styles', $css);
+		wp_add_inline_style('corsivo-theme-forced-styles', corsivo_theme_sanitize_css_block($css));
 	}
 	add_action('wp_enqueue_scripts', 'corsivo_theme_enqueue_forced_style_injection', 98);
-
-	/**
-	 * Re-emit @font-face declarations for install fonts that declare features.
-	 *
-	 * WordPress emits @font-face from theme.json via `wp_print_font_faces`
-	 * on `wp_head` priority 50, without `font-feature-settings`. We print
-	 * the arricchito version at priority 60 so the duplicate descriptor
-	 * (same font-family + same src) wins and the features stick.
-	 */
-	function corsivo_theme_print_install_font_features_css() {
-		$install_fonts = apply_filters('corsivo_theme_install_fonts', array());
-		if (empty($install_fonts) || !is_array($install_fonts)) return;
-
-		$font_families = array();
-		foreach ($install_fonts as $entry) {
-			if (empty($entry['font-family']) || empty($entry['features'])) continue;
-			if (!is_array($entry['features'])) continue;
-
-			$family_name = $entry['font-family'];
-			$font_faces = corsivo_theme_build_install_font_faces($entry);
-
-			if (empty($font_faces)) continue;
-
-			$font_families[] = array(
-				'fontFamily' => $family_name,
-				'fontFace'   => $font_faces,
-			);
-		}
-
-		if (empty($font_families)) return;
-
-		$css = corsivo_theme_generate_forced_font_face_css($font_families);
-		if (empty(trim($css))) return;
-
-		echo "<style id='corsivo-theme-font-features-css'>\n" . corsivo_theme_sanitize_css_block($css) . "</style>\n";
-	}
-	add_action('wp_head', 'corsivo_theme_print_install_font_features_css', 60);
 
 	/**
 	 * Ensure the editor canvas gets the same preview wrapper class used by
@@ -2546,7 +2367,7 @@ if (!defined('ABSPATH')) exit;
 
 		// Inject CSS for the resolved automatic template
 		if ($automatic_css) {
-			wp_add_inline_style('wp-edit-blocks', $automatic_css);
+			wp_add_inline_style('wp-edit-blocks', corsivo_theme_sanitize_css_block($automatic_css));
 		}
 
 		// --- 3. Backend inline CSS (replaces backend.css) ---
@@ -2585,7 +2406,7 @@ if (!defined('ABSPATH')) exit;
 		$backend_css .= 'html .block-editor-block-list__layout .wp-block-heading, html .block-editor-block-list__layout .wp-block-paragraph { margin-top: 1rem; margin-bottom: 1rem; }';
 
 		if ($backend_css) {
-			wp_add_inline_style('wp-edit-blocks', $backend_css);
+			wp_add_inline_style('wp-edit-blocks', corsivo_theme_sanitize_css_block($backend_css));
 		}
 
 		// --- 4. Enqueue sidebar panel script (skipped for the footer page) ---
@@ -2908,7 +2729,11 @@ if (!defined('ABSPATH')) exit;
 			return null;
 		}
 
-		return get_post($page_id);
+		$page = get_post($page_id);
+		if (!$page || !is_post_publicly_viewable($page) || post_password_required($page)) {
+			return null;
+		}
+		return $page;
 	}
 
 	function corsivo_theme_get_function_page_content($slug) {

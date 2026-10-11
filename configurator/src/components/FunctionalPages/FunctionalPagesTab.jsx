@@ -1,23 +1,22 @@
 import { SelectControl, TextControl } from '@wordpress/components';
-import { useMemo, useState } from '@wordpress/element';
+import { useCallback, useState } from '@wordpress/element';
 import { EntitySelector, Repeater } from '@corsivo-suite/wp-admin-ui';
 import { __ } from '@wordpress/i18n';
 import { useConfig } from '../../store';
+import { resolvePages, searchPages } from '../../api';
 import {
 	entitySelectorTranslations,
 	repeaterTranslations,
 } from '../../adminUiTranslations';
-import {
-	reconcilePageAssignments,
-	sanitizeSlug,
-} from '../../collectionAdapters';
+import { sanitizeSlug } from '../../collectionAdapters';
 
 function FunctionalPageFields( {
 	page,
 	onChange,
 	assignment,
 	onAssignmentChange,
-	pageOptions,
+	loadPageOptions,
+	resolvePageOptions,
 } ) {
 	const updateLabel = ( label ) => {
 		const autoSlug = ! page.slug || page._autoSlug;
@@ -82,7 +81,9 @@ function FunctionalPageFields( {
 							: ''
 					)
 				}
-				options={ pageOptions }
+				loadOptions={ loadPageOptions }
+				resolveValues={ resolvePageOptions }
+				minQueryLength={ 2 }
 				allowReorder={ false }
 				placeholder={ __(
 					'Search a WordPress page…',
@@ -109,21 +110,29 @@ export default function FunctionalPagesTab() {
 	const activeLanguages = window.corsivoThemeEditor?.activeLanguages || [
 		{ code: currentLanguage, label: currentLanguage },
 	];
-	const pagesByLanguage = window.corsivoThemeEditor?.wpPagesByLanguage;
 	const [ selectedLanguage, setSelectedLanguage ] =
 		useState( currentLanguage );
-	const pageOptions = useMemo( () => {
-		const wordpressPages =
-			pagesByLanguage?.[ selectedLanguage ] ||
-			window.corsivoThemeEditor?.wpPages ||
-			[];
-		return wordpressPages.map( ( page ) => ( {
-			value: Number( page.id ),
-			label: page.title,
-		} ) );
-	}, [ pagesByLanguage, selectedLanguage ] );
+	const loadPageOptions = useCallback(
+		( query, context ) =>
+			searchPages( query, {
+				language: selectedLanguage,
+				signal: context.signal,
+			} ),
+		[ selectedLanguage ]
+	);
+	const resolvePageOptions = useCallback(
+		( pageIds, context ) =>
+			resolvePages( pageIds, {
+				language: selectedLanguage,
+				signal: context.signal,
+			} ),
+		[ selectedLanguage ]
+	);
 
 	const updateAssignment = ( slug, pageId ) => {
+		if ( ! slug ) {
+			return;
+		}
 		dispatch( {
 			type: 'SET_PAGE_ASSIGNMENTS',
 			payload: {
@@ -137,14 +146,7 @@ export default function FunctionalPagesTab() {
 	};
 
 	const updatePages = ( nextPages, change ) => {
-		dispatch( { type: 'SET_FUNCTIONAL_PAGES', payload: nextPages } );
-		const nextAssignments = reconcilePageAssignments( assignments, change );
-		if ( nextAssignments !== assignments ) {
-			dispatch( {
-				type: 'SET_PAGE_ASSIGNMENTS',
-				payload: nextAssignments,
-			} );
-		}
+		dispatch( { type: 'SET_FUNCTIONAL_PAGES', payload: nextPages, change } );
 	};
 
 	return (
@@ -209,12 +211,13 @@ export default function FunctionalPagesTab() {
 						page={ item }
 						onChange={ onChange }
 						assignment={
-							assignments[ item.slug ]?.[ selectedLanguage ]
+							assignments[ item._slugReference || item.slug ]?.[ selectedLanguage ]
 						}
 						onAssignmentChange={ ( pageId ) =>
-							updateAssignment( item.slug, pageId )
+							updateAssignment( item._slugReference || item.slug, pageId )
 						}
-						pageOptions={ pageOptions }
+						loadPageOptions={ loadPageOptions }
+						resolvePageOptions={ resolvePageOptions }
 					/>
 				) }
 				canRemoveItem={ ( page ) => ! page.fromFilter }

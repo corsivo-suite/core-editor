@@ -78,6 +78,7 @@ function corsivo_theme_log_minify_error($type, $error) {
 }
 
 function corsivo_theme_enqueue_min_css() {
+	global $wp_styles;
 	require_once __DIR__ . '/minify.php';
 	$bundle = corsivo_theme_build_css();
 	if (is_wp_error($bundle)) {
@@ -85,11 +86,12 @@ function corsivo_theme_enqueue_min_css() {
 		return;
 	}
 
-	foreach ($bundle['handles'] as $handle) wp_dequeue_style($handle);
 	wp_enqueue_style('corsivo-theme-style-min', $bundle['url'], $bundle['dependencies'], $bundle['version']);
+	corsivo_theme_replace_enqueued_assets($wp_styles, $bundle['handles'], 'corsivo-theme-style-min');
 }
 
 function corsivo_theme_enqueue_min_js() {
+	global $wp_scripts;
 	require_once __DIR__ . '/minify.php';
 	$bundle = corsivo_theme_build_js();
 	if (is_wp_error($bundle)) {
@@ -97,11 +99,8 @@ function corsivo_theme_enqueue_min_js() {
 		return;
 	}
 
-	foreach ($bundle['handles'] as $handle) wp_dequeue_script($handle);
 	wp_enqueue_script('corsivo-theme-script-min', $bundle['url'], $bundle['dependencies'], $bundle['version'], true);
-	foreach ($bundle['localized_data'] as $script) wp_add_inline_script('corsivo-theme-script-min', $script, 'before');
-	foreach ($bundle['inline_before'] as $script) wp_add_inline_script('corsivo-theme-script-min', $script, 'before');
-	foreach ($bundle['inline_after'] as $script) wp_add_inline_script('corsivo-theme-script-min', $script, 'after');
+	corsivo_theme_replace_enqueued_assets($wp_scripts, $bundle['handles'], 'corsivo-theme-script-min');
 }
 
 function corsivo_theme_minify_enabled($key) {

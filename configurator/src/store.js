@@ -1,6 +1,17 @@
 import { createContext, useContext, useReducer, useCallback, useEffect } from '@wordpress/element';
 import { saveConfig } from './api';
-import { createConfigSavePayload } from './configAdapter';
+import {
+	acknowledgeSavedTemplates,
+	createConfigSavePayload,
+	synchronizeSettingsRevision,
+} from './configAdapter';
+import {
+	reconcilePageAssignments,
+	reconcileTemplateReferences,
+	retainPageSlugReference,
+	retainTemplateSlugReference,
+} from './collectionAdapters';
+import { updateInstalledFontWeightUrl } from './installedFontAdapter';
 
 const ConfigContext = createContext();
 
@@ -30,7 +41,7 @@ const initialState = {
 	error: null,
 };
 
-function configReducer(state, action) {
+export function configReducer(state, action) {
 	switch (action.type) {
 		case 'SET_FONTS':
 			return { ...state, fonts: action.payload, revision: state.revision + 1, isDirty: action.silent ? state.isDirty : true, saveStatus: action.silent ? state.saveStatus : null };
@@ -42,14 +53,31 @@ function configReducer(state, action) {
 			return { ...state, customFonts: action.payload, revision: state.revision + 1, isDirty: true, saveStatus: null };
 		case 'SET_INSTALL_FONTS':
 			return { ...state, installFonts: action.payload, revision: state.revision + 1, isDirty: true, saveStatus: null };
-		case 'SET_FUNCTIONAL_PAGES':
-			return { ...state, functionalPages: action.payload, revision: state.revision + 1, isDirty: true, saveStatus: null };
+		case 'SET_INSTALLED_FONT_WEIGHT_URL': {
+			const installFonts = updateInstalledFontWeightUrl(
+				state.installFonts,
+				action.fontIdentity,
+				action.weightIdentity,
+				action.url
+			);
+			return installFonts === state.installFonts
+				? state
+				: { ...state, installFonts, revision: state.revision + 1, isDirty: true, saveStatus: null };
+		}
+		case 'SET_FUNCTIONAL_PAGES': {
+			const change = action.change || { type: 'reconcile' };
+			const functionalPages = retainPageSlugReference(action.payload, change, state.pageAssignments);
+			return { ...state, functionalPages, pageAssignments: reconcilePageAssignments(state.pageAssignments, change, action.payload), revision: state.revision + 1, isDirty: true, saveStatus: null };
+		}
 		case 'SET_PAGE_ASSIGNMENTS':
 			return { ...state, pageAssignments: action.payload, revision: state.revision + 1, isDirty: true, saveStatus: null };
 		case 'SET_GLOBAL_STYLES':
 			return { ...state, globalStyles: action.payload, revision: state.revision + 1, isDirty: true, saveStatus: null };
-		case 'SET_STYLE_TEMPLATES':
-			return { ...state, styleTemplates: action.payload, revision: state.revision + 1, isDirty: true, saveStatus: null };
+		case 'SET_STYLE_TEMPLATES': {
+			const change = action.change || { type: 'reconcile' };
+			const styleTemplates = retainTemplateSlugReference(action.payload, change);
+			return { ...state, styleTemplates, contextStyles: reconcileTemplateReferences(state.contextStyles, change, action.payload), revision: state.revision + 1, isDirty: true, saveStatus: null };
+		}
 		case 'SET_CONTEXT_STYLES':
 			return { ...state, contextStyles: action.payload, revision: state.revision + 1, isDirty: true, saveStatus: null };
 		case 'SET_CORE_COMPONENTS':
@@ -67,6 +95,7 @@ function configReducer(state, action) {
 				saveMessage: action.message || 'Saved.',
 				saveWarning: !!action.warning,
 				serverRevision: action.serverRevision || state.serverRevision,
+				styleTemplates: acknowledgeSavedTemplates(state.styleTemplates, action.styleTemplates || []),
 			};
 		case 'ERROR':
 			return { ...state, isSaving: false, error: action.payload, saveStatus: 'error', saveMessage: '', saveWarning: false };
@@ -107,13 +136,17 @@ export function ConfigProvider({ children, initialData }) {
 		return () => window.removeEventListener('beforeunload', preventUnsavedNavigation);
 	}, [state.isDirty]);
 
+	useEffect(() => {
+		synchronizeSettingsRevision(state.serverRevision);
+	}, [state.serverRevision]);
+
 	const save = useCallback(async () => {
 		if (state.isSaving || !state.isDirty) return;
 		const revision = state.revision;
 		dispatch({ type: 'SAVING' });
 		try {
 			const response = await saveConfig(createConfigSavePayload(state));
-			dispatch({ type: 'SAVED', revision, serverRevision: response.revision, message: response.message, warning: response.warning });
+			dispatch({ type: 'SAVED', revision, serverRevision: response.revision, styleTemplates: state.styleTemplates, message: response.message, warning: response.warning });
 		} catch (err) {
 			dispatch({ type: 'ERROR', payload: err.message || 'Save failed' });
 		}

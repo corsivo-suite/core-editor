@@ -1,0 +1,17 @@
+{
+  "extends": "@wordpress/stylelint-config/scss-stylistic",
+  "rules": {
+    "@stylistic/block-closing-brace-newline-before": null,
+    "@stylistic/block-opening-brace-newline-after": null,
+    "@stylistic/declaration-colon-newline-after": null,
+    "@stylistic/string-quotes": null,
+    "@stylistic/value-list-comma-newline-after": null,
+    "color-named": null,
+    "comment-empty-line-before": null,
+    "declaration-block-no-shorthand-property-overrides": null,
+    "font-family-name-quotes": null,
+    "no-descending-specificity": null,
+    "rule-empty-line-before": null,
+    "selector-class-pattern": null
+  }
+}

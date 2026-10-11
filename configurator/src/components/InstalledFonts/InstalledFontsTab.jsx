@@ -9,6 +9,7 @@ import {
 import { useConfig } from '../../store';
 import { getThemeFonts, uploadFontFile } from '../../api';
 import { scanAllFontFiles } from '../../lib/fontFeatures';
+import { initializeInstalledFont, renameInstalledFontWeight } from '../../installedFontAdapter';
 
 function sanitizeSlug(str, trim = true) {
 	let slug = str
@@ -157,6 +158,7 @@ function InstalledFontEditor({
 	onRemove,
 	themeFiles,
 	onFileUploaded,
+	onWeightUrlChange,
 	fileFeatures,
 }) {
 	// Convert object {weight: url} → array [{weight, url}] for stable rendering
@@ -164,6 +166,7 @@ function InstalledFontEditor({
 	const weightEntries = Object.entries(weightObj).map(([w, url]) => ({
 		weight: w,
 		url: url,
+		_uid: font._weightIdentities[w],
 	}));
 
 	const updateField = (field, value) => {
@@ -206,7 +209,7 @@ function InstalledFontEditor({
 		entries.forEach(({ weight, url }) => {
 			obj[weight] = url;
 		});
-		updateField('font-weight', obj);
+		onChange(initializeInstalledFont({ ...font, 'font-weight': obj }));
 	};
 
 	const addWeight = () => {
@@ -224,21 +227,10 @@ function InstalledFontEditor({
 	};
 
 	const renameWeight = (index, newWeight) => {
-		if (!newWeight) return false;
-		const collision = weightEntries.some(
-			(entry, i) => i !== index && entry.weight === newWeight
-		);
-		if (collision) return false;
-		const next = [...weightEntries];
-		next[index] = { ...next[index], weight: newWeight };
-		saveWeights(next);
+		const renamedFont = renameInstalledFontWeight(font, weightEntries[index].weight, newWeight);
+		if (renamedFont === font) return false;
+		onChange(renamedFont);
 		return true;
-	};
-
-	const updateWeightUrl = (index, newUrl) => {
-		const next = [...weightEntries];
-		next[index] = { ...next[index], url: newUrl };
-		saveWeights(next);
 	};
 
 	const removeWeight = (index) => {
@@ -331,7 +323,7 @@ function InstalledFontEditor({
 
 					<h4 style={{ margin: '1rem 0 0.5rem' }}>Font Weights</h4>
 					{weightEntries.map((entry, index) => (
-						<div key={index} className="ts-installed-font__weight">
+						<div key={entry._uid} className="ts-installed-font__weight">
 							<WeightField
 								weight={entry.weight}
 								onRename={(newWeight) => renameWeight(index, newWeight)}
@@ -339,13 +331,13 @@ function InstalledFontEditor({
 							<div className="ts-installed-font__file-select">
 								<ThemeFontSelect
 									value={entry.url}
-									onSelect={(newUrl) => updateWeightUrl(index, newUrl)}
+									onSelect={(newUrl) => onWeightUrlChange(entry._uid, newUrl)}
 									themeFiles={themeFiles}
 								/>
 							</div>
 							<FontUploadButton
 								onUploaded={(uploadedUrl) => {
-									updateWeightUrl(index, uploadedUrl);
+									onWeightUrlChange(entry._uid, uploadedUrl);
 									onFileUploaded();
 								}}
 							/>
@@ -408,7 +400,7 @@ export default function InstalledFontsTab() {
 	const fonts = state.installFonts || [];
 	const [themeFiles, setThemeFiles] = useState([]);
 	const [loadingFiles, setLoadingFiles] = useState(false);
-	const [expandedIdx, setExpandedIdx] = useState(null);
+	const [expandedIdentity, setExpandedIdentity] = useState(null);
 	const referencedFontUrlKey = getReferencedFontUrlKey(fonts);
 
 	const loadThemeFiles = async () => {
@@ -470,23 +462,23 @@ export default function InstalledFontsTab() {
 	const removeFont = (index) => {
 		const next = fonts.filter((_, i) => i !== index);
 		dispatch({ type: 'SET_INSTALL_FONTS', payload: next });
-		if (expandedIdx === index) setExpandedIdx(null);
+		if (expandedIdentity === fonts[index]._uid) setExpandedIdentity(null);
 	};
 
 	const addFont = () => {
-		const newIdx = fonts.length;
+		const newFont = initializeInstalledFont({
+			'font-family': '',
+			'font-weight': {},
+			format: 'woff2',
+		});
 		dispatch({
 			type: 'SET_INSTALL_FONTS',
 			payload: [
 				...fonts,
-				{
-					'font-family': '',
-					'font-weight': {},
-					format: 'woff2',
-				},
+				newFont,
 			],
 		});
-		setExpandedIdx(newIdx);
+		setExpandedIdentity(newFont._uid);
 	};
 
 	return (
@@ -506,16 +498,19 @@ export default function InstalledFontsTab() {
 
 			{fonts.map((font, index) => (
 				<InstalledFontEditor
-					key={index}
+					key={font._uid}
 					font={font}
-					expanded={expandedIdx === index}
+					expanded={expandedIdentity === font._uid}
 					onToggle={() =>
-						setExpandedIdx(expandedIdx === index ? null : index)
+						setExpandedIdentity(expandedIdentity === font._uid ? null : font._uid)
 					}
 					onChange={(updated) => updateFont(index, updated)}
 					onRemove={() => removeFont(index)}
 					themeFiles={themeFiles}
 					onFileUploaded={loadThemeFiles}
+					onWeightUrlChange={(weightIdentity, url) =>
+						dispatch({ type: 'SET_INSTALLED_FONT_WEIGHT_URL', fontIdentity: font._uid, weightIdentity, url })
+					}
 					fileFeatures={state.themeFontFeatures || {}}
 				/>
 			))}

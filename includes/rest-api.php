@@ -7,16 +7,33 @@ function corsivo_theme_prepare_functional_page($page_id) {
 		return null;
 	}
 
-	return array(
-		'ID' => (int) $page->ID,
-		'post_title' => get_the_title($page),
-		'post_name' => $page->post_name,
-		'post_excerpt' => get_the_excerpt($page),
-		'post_content' => apply_filters('the_content', $page->post_content),
-		'post_date' => mysql_to_rfc3339($page->post_date),
-		'post_modified' => mysql_to_rfc3339($page->post_modified),
-		'permalink' => get_permalink($page),
-	);
+	$post_globals = array('post', 'id', 'authordata', 'currentday', 'currentmonth', 'page', 'pages', 'multipage', 'more', 'numpages');
+	$previous_globals = array();
+	foreach ($post_globals as $name) {
+		if (array_key_exists($name, $GLOBALS)) $previous_globals[$name] = $GLOBALS[$name];
+	}
+	try {
+		$GLOBALS['post'] = $page;
+		setup_postdata($page);
+		return array(
+			'ID' => (int) $page->ID,
+			'post_title' => get_the_title($page),
+			'post_name' => $page->post_name,
+			'post_excerpt' => get_the_excerpt($page),
+			'post_content' => apply_filters('the_content', $page->post_content),
+			'post_date' => mysql_to_rfc3339($page->post_date),
+			'post_modified' => mysql_to_rfc3339($page->post_modified),
+			'permalink' => get_permalink($page),
+		);
+	} finally {
+		foreach ($post_globals as $name) {
+			if (array_key_exists($name, $previous_globals)) {
+				$GLOBALS[$name] = $previous_globals[$name];
+			} else {
+				unset($GLOBALS[$name]);
+			}
+		}
+	}
 }
 
 function corsivo_theme_functional_pages_api() {

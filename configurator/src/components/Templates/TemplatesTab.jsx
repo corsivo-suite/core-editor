@@ -253,17 +253,11 @@ export default function TemplatesTab() {
 
 				<StyleTemplateCollection
 					items={styleTemplates}
-					onChange={(nextTemplates) =>
+					onChange={(nextTemplates, change) =>
 						dispatch({
 							type: 'SET_STYLE_TEMPLATES',
 							payload: nextTemplates,
-						})
-					}
-					contextStyles={contextStyles}
-					onContextStylesChange={(nextContextStyles) =>
-						dispatch({
-							type: 'SET_CONTEXT_STYLES',
-							payload: nextContextStyles,
+							change,
 						})
 					}
 					renderFields={(template, updateTemplate) => (

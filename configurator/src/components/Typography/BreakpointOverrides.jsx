@@ -50,9 +50,6 @@ export default function BreakpointOverrides({
 
 	const slug = fontSlug || 'slug';
 
-	// Get breakpoint px value
-	const bpValues = state.breakpoints || {};
-
 	return (
 		<div className="ts-breakpoint-overrides">
 			{/* Existing breakpoint rules */}

@@ -7,13 +7,12 @@ import { Repeater } from '@corsivo-suite/wp-admin-ui';
 import { __ } from '@wordpress/i18n';
 import { repeaterTranslations } from '../../adminUiTranslations';
 import {
-	reconcileTemplateReferences,
-	retainTemplateSlugReference,
 	sanitizeSlug,
 	setDefaultStyleTemplate,
 } from '../../collectionAdapters';
+import { initializeStyleTemplate } from '../../configAdapter';
 
-const createStyleTemplate = () => ( {
+const createStyleTemplate = () => initializeStyleTemplate( {
 	slug: '',
 	name: '',
 	body: {},
@@ -23,7 +22,7 @@ const createStyleTemplate = () => ( {
 	defaultParagraphStyle: '',
 	defaultHeadingStyle: '',
 	isDefault: false,
-} );
+}, false );
 
 const updateTemplateSlug = ( item, slug, properties = {} ) => {
 	const { _slugReference, ...template } = item;
@@ -105,26 +104,8 @@ export function ContextAssignments( {
 export function StyleTemplateCollection( {
 	items,
 	onChange,
-	contextStyles,
-	onContextStylesChange,
 	renderFields,
 } ) {
-	const commitCollectionChange = ( nextItems, change ) => {
-		const stabilizedItems = retainTemplateSlugReference(
-			nextItems,
-			change
-		);
-		onChange( stabilizedItems );
-		const nextContextStyles = reconcileTemplateReferences(
-			contextStyles,
-			change,
-			stabilizedItems
-		);
-		if ( nextContextStyles !== contextStyles ) {
-			onContextStylesChange( nextContextStyles );
-		}
-	};
-
 	const setDefaultTemplate = ( itemIndex, enabled ) => {
 		onChange( setDefaultStyleTemplate( items, itemIndex, enabled ) );
 	};
@@ -133,7 +114,7 @@ export function StyleTemplateCollection( {
 		<Repeater
 			{ ...repeaterTranslations }
 			items={ items }
-			onChange={ commitCollectionChange }
+			onChange={ onChange }
 			itemIdentity="transient"
 			createItem={ createStyleTemplate }
 			getItemLabel={ ( item ) =>

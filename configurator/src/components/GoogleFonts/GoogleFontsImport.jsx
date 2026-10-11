@@ -29,10 +29,6 @@ function isLoadableGoogleFontsUrl(rawUrl) {
  */
 function GoogleFontRow({ font, onChange }) {
 	const [open, setOpen] = useState(false);
-	const varLabel = font.varname
-		? `→ --wp--preset--font-family--${font.varname}`
-		: '';
-
 	return (
 		<div className={`ts-font-editor${open ? ' ts-font-editor--expanded' : ''}`}>
 			<div className="ts-font-editor__header" onClick={() => setOpen(!open)}>

@@ -89,7 +89,7 @@ function corsivo_theme_replace_file($temporary_path, $destination_path) {
 	return false;
 }
 
-function corsivo_theme_write_settings_file($settings, $expected_revision = null) {
+function corsivo_theme_write_settings_file($settings, $expected_revision = null, $after_write = null) {
 	if (!is_array($settings)) {
 		return new WP_Error('corsivo_theme_invalid_settings', 'Theme settings must be an object.');
 	}
@@ -198,12 +198,15 @@ function corsivo_theme_write_settings_file($settings, $expected_revision = null)
 		@chmod($file_path, $permissions & 0000666);
 	}
 
-	flock($lock_handle, LOCK_UN);
-	fclose($lock_handle);
-
-	global $corsivo_theme_config, $corsivo_theme_settings_file_corrupt;
-	$corsivo_theme_config = $settings;
-	$corsivo_theme_settings_file_corrupt = false;
+	try {
+		global $corsivo_theme_config, $corsivo_theme_settings_file_corrupt;
+		$corsivo_theme_config = $settings;
+		$corsivo_theme_settings_file_corrupt = false;
+		if (is_callable($after_write)) $after_write($settings, $current_settings);
+	} finally {
+		flock($lock_handle, LOCK_UN);
+		fclose($lock_handle);
+	}
 
 	return true;
 }
@@ -612,7 +615,6 @@ function corsivo_theme_enqueue_admin($hook) {
 
 	$active_languages = corsivo_theme_active_languages();
 	$language_options = array();
-	$pages_by_language = array();
 	foreach ($active_languages as $language_key => $language) {
 		$language_code = sanitize_key($language['code'] ?? $language_key);
 		if ($language_code === '') continue;
@@ -620,26 +622,15 @@ function corsivo_theme_enqueue_admin($hook) {
 			'code' => $language_code,
 			'label' => sanitize_text_field($language['native_name'] ?? $language['translated_name'] ?? strtoupper($language_code)),
 		);
-		$page_args = corsivo_theme_wpml_enabled()
-			? array('suppress_filters' => false, 'lang' => $language_code)
-			: array();
-		$pages_by_language[$language_code] = array();
-		foreach (get_pages($page_args) as $page) {
-			if (empty($page->post_title)) continue;
-			$pages_by_language[$language_code][] = array('id' => $page->ID, 'title' => $page->post_title);
-		}
 	}
 	if (empty($language_options)) {
-		$language_options[] = array('code' => 'default', 'label' => 'Default');
-		$pages_by_language['default'] = array();
+		$language_options[] = array('code' => 'default', 'label' => __('Default', 'corsivo-theme-editor'));
 	}
 	$language_codes = array_column($language_options, 'code');
 	if (!in_array($current_lang, $language_codes, true)) {
 		$default_lang = corsivo_theme_default_language();
 		$current_lang = in_array($default_lang, $language_codes, true) ? $default_lang : $language_codes[0];
 	}
-	$pages_list = $pages_by_language[$current_lang] ?? array();
-
     // Filter-defined functional pages
     $filter_pages = apply_filters('corsivo_theme_pages', array());
 
@@ -775,8 +766,6 @@ function corsivo_theme_enqueue_admin($hook) {
             'core_components'  => isset($configurator['core_components']) ? $configurator['core_components'] : (object) array(),
             'spacing'          => isset($configurator['spacing']) ? $configurator['spacing'] : (object) array(),
         ),
-        'wpPages'            => $pages_list,
-		'wpPagesByLanguage'  => !empty($pages_by_language) ? $pages_by_language : (object) array(),
 		'activeLanguages'    => $language_options,
         'filterPages'        => !empty($filter_pages) ? $filter_pages : (object) array(),
         'pageAssignments'    => !empty($page_assignments) ? $page_assignments : (object) array(),

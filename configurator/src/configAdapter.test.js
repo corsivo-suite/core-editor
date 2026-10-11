@@ -2,6 +2,8 @@ import {
 	createConfigSavePayload,
 	normalizePageAssignments,
 	normalizeRecordCollection,
+	initializeStyleTemplate,
+	synchronizeSettingsRevision,
 } from './configAdapter';
 
 describe( 'theme configurator persistence adapter', () => {
@@ -89,6 +91,8 @@ describe( 'theme configurator persistence adapter', () => {
 					name: 'Night',
 					_slugManual: true,
 					_slugReference: 'dark',
+					_savedSlug: 'dark',
+					_uid: 'night-ui',
 				},
 				{ slug: 'light', name: 'Light' },
 			],
@@ -126,11 +130,39 @@ describe( 'theme configurator persistence adapter', () => {
 			{ slug: 'light', name: 'Light' },
 		] );
 		expect( payload.context_styles ).toBe( state.contextStyles );
+		expect( payload.template_renames ).toEqual( { dark: 'night' } );
 		expect( payload.breakpoints ).toBe( state.breakpoints );
 		expect(
 			payload.context_styles.map( ( item ) => item.context )
 		).toEqual( [ 'single-post', 'home' ] );
 		expect( reloadedTemplates ).toEqual( payload.style_templates );
 		expect( reloadedContextStyles ).toEqual( payload.context_styles );
+	} );
+
+	it( 'retains persisted slugs when a template is reloaded for name edits', () => {
+		const template = initializeStyleTemplate( { slug: 'manual-slug', name: 'Original name' } );
+		expect( template._slugManual ).toBe( true );
+		expect( template._savedSlug ).toBe( 'manual-slug' );
+		expect( initializeStyleTemplate( { slug: '' }, false )._slugManual ).toBe( false );
+	} );
+
+	it( 'updates every PHP settings form revision after a configurator save', () => {
+		document.body.innerHTML = '<form><input type="hidden" name="settings_revision" value="old"></form><form><input type="hidden" name="settings_revision" value="old"></form>';
+		synchronizeSettingsRevision( 'new-revision' );
+		expect( Array.from( document.querySelectorAll( 'input' ) ).map( ( input ) => input.value ) ).toEqual( [ 'new-revision', 'new-revision' ] );
+		synchronizeSettingsRevision( '' );
+		expect( document.querySelector( 'input' ).value ).toBe( 'new-revision' );
+	} );
+
+	it( 'strips stable font and weight identities from persisted fonts', () => {
+		const state = {
+			fonts: [], colors: [], breakpoints: {}, customFonts: [],
+			installFonts: [ { _uid: 'font-id', _weightIdentities: { 400: 'weight-id' }, 'font-family': 'Inter', 'font-weight': { 400: 'inter.woff2' } } ],
+			functionalPages: [ { slug: 'checkout', _slugReference: 'previous', _autoSlug: false, fromFilter: false } ],
+			pageAssignments: {}, globalStyles: {}, styleTemplates: [], contextStyles: [],
+			coreComponents: { elements: {}, blockStyles: [] }, spacing: {},
+		};
+		expect( createConfigSavePayload( state ).install_fonts ).toEqual( [ { 'font-family': 'Inter', 'font-weight': { 400: 'inter.woff2' } } ] );
+		expect( createConfigSavePayload( state ).functional_pages ).toEqual( [ { slug: 'checkout' } ] );
 	} );
 } );

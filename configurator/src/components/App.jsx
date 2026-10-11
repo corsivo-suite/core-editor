@@ -12,7 +12,9 @@ import { Button, Notice } from '@wordpress/components';
 import {
 	normalizePageAssignments,
 	normalizeRecordCollection,
+	initializeStyleTemplate,
 } from '../configAdapter';
+import { initializeInstalledFont } from '../installedFontAdapter';
 
 const SECTIONS = [
 	'overview',
@@ -125,7 +127,7 @@ const normalizeInitialData = (localizedData) => {
 		})
 	);
 	const installFonts = normalizeRecordCollection(config.install_fonts).map(
-		(font) => ({
+		(font) => initializeInstalledFont({
 			...font,
 			features: Array.isArray(font.features) ? font.features : [],
 		})
@@ -153,7 +155,7 @@ const normalizeInitialData = (localizedData) => {
 		styleTemplates: normalizeRecordCollection(
 			config.style_templates,
 			'slug'
-		).map(normalizeStyle),
+		).map((template) => initializeStyleTemplate(normalizeStyle(template))),
 		contextStyles: normalizeRecordCollection(
 			config.context_styles,
 			'context'

@@ -14,6 +14,10 @@ function corsivo_theme_asset_assert($condition, $message) {
 }
 
 $package = json_decode(file_get_contents($configurator_dir . '/package.json'), true);
+$plugin_package = json_decode(file_get_contents($plugin_dir . '/package.json'), true);
+foreach (['assets', 'templates'] as $runtime_directory) {
+	corsivo_theme_asset_assert(in_array($runtime_directory, $plugin_package['files'] ?? [], true), "Package includes {$runtime_directory} runtime files.");
+}
 $source = file_get_contents($configurator_dir . '/src/index.js');
 $settings = file_get_contents($plugin_dir . '/includes/admin/settings.php');
 $plugin_header = file_get_contents($plugin_dir . '/corsivo-theme-editor.php');
