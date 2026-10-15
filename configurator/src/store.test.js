@@ -37,6 +37,126 @@ const renameTemplate = ( state, index, slug ) => {
 	} );
 };
 
+const renamePreset = ( state, collection, index, slug ) => {
+	const previousItem = state[ collection ][ index ];
+	const item = { ...previousItem, slug };
+	const items = [ ...state[ collection ] ];
+	items[ index ] = item;
+	return configReducer( state, {
+		type: collection === 'fonts' ? 'SET_FONTS' : 'SET_COLORS',
+		payload: items,
+		change: { type: 'update', index, previousItem, item },
+	} );
+};
+
+describe( 'font and color preset references', () => {
+	it( 'renames structured typography references without changing CSS or other inheritance', () => {
+		const untouchedTemplate = { slug: 'untouched', body: { font: 'secondary' } };
+		const state = renamePreset( createState( {
+			fonts: [ { slug: 'primary' }, { slug: 'secondary' } ],
+			globalStyles: {
+				body: { font: 'primary', color: 'primary' },
+				heading: { font: 'primary' },
+				titleStyle: 'primary',
+				defaultParagraphStyle: 'primary',
+				defaultHeadingStyle: 'primary',
+			},
+			styleTemplates: [ { slug: 'night', body: { font: 'primary' }, titleStyle: 'primary' }, untouchedTemplate ],
+			coreComponents: {
+				elements: { button: { inherits: 'font:primary' } },
+				blockStyles: [ { inherits: 'font:primary', css: 'font-family: var(--wp--preset--font-family--primary);' }, { inherits: 'bs:core/button::primary' } ],
+			},
+		} ), 'fonts', 0, 'brand' );
+		expect( state.globalStyles ).toEqual( {
+			body: { font: 'brand', color: 'primary' },
+			heading: { font: 'brand' },
+			titleStyle: 'brand',
+			defaultParagraphStyle: 'brand',
+			defaultHeadingStyle: 'brand',
+		} );
+		expect( state.styleTemplates[ 0 ] ).toEqual( { slug: 'night', body: { font: 'brand' }, titleStyle: 'brand' } );
+		expect( state.styleTemplates[ 1 ] ).toBe( untouchedTemplate );
+		expect( state.coreComponents.elements.button.inherits ).toBe( 'font:brand' );
+		expect( state.coreComponents.blockStyles ).toEqual( [
+			{ inherits: 'font:brand', css: 'font-family: var(--wp--preset--font-family--primary);' },
+			{ inherits: 'bs:core/button::primary' },
+		] );
+	} );
+
+	it( 'renames every palette field in global styles and templates', () => {
+		const fields = {
+			body: { background: 'primary', color: 'primary', font: 'primary' },
+			heading: { color: 'primary' },
+			link: { color: 'primary', hoverColor: 'primary' },
+		};
+		const state = renamePreset( createState( {
+			colors: [ { slug: 'primary', color: '#123456' } ],
+			globalStyles: fields,
+			styleTemplates: [ { slug: 'night', ...fields } ],
+		} ), 'colors', 0, 'brand' );
+		const renamedFields = {
+			body: { background: 'brand', color: 'brand', font: 'primary' },
+			heading: { color: 'brand' },
+			link: { color: 'brand', hoverColor: 'brand' },
+		};
+		expect( state.globalStyles ).toEqual( renamedFields );
+		expect( state.styleTemplates ).toEqual( [ { slug: 'night', ...renamedFields } ] );
+	} );
+
+	it.each( [ 'fonts', 'colors' ] )( 'retains %s references through empty drafts and resolves a slug swap', ( collection ) => {
+		const field = collection === 'fonts' ? 'font' : 'color';
+		let state = createState( {
+			[ collection ]: [ { slug: 'primary' }, { slug: 'secondary' } ],
+			globalStyles: { body: { [ field ]: 'primary' }, heading: { [ field ]: 'secondary' } },
+		} );
+		state = renamePreset( state, collection, 0, '' );
+		state = renamePreset( state, collection, 0, 'secondary' );
+		expect( state.globalStyles.body[ field ] ).toBe( 'primary' );
+		state = renamePreset( state, collection, 1, 'primary' );
+		expect( state.globalStyles ).toEqual( { body: { [ field ]: 'secondary' }, heading: { [ field ]: 'primary' } } );
+		expect( state[ collection ] ).toEqual( [ { slug: 'secondary' }, { slug: 'primary' } ] );
+	} );
+
+	it.each( [ 'fonts', 'colors' ] )( 'clears removed %s references and resolves a pending collision', ( collection ) => {
+		const field = collection === 'fonts' ? 'font' : 'color';
+		let state = createState( {
+			[ collection ]: [ { slug: 'primary' }, { slug: 'secondary' } ],
+			globalStyles: { body: { [ field ]: 'primary' }, heading: { [ field ]: 'secondary' } },
+		} );
+		state = renamePreset( state, collection, 0, 'secondary' );
+		state = configReducer( state, {
+			type: collection === 'fonts' ? 'SET_FONTS' : 'SET_COLORS',
+			payload: [ state[ collection ][ 0 ] ],
+			change: { type: 'remove', index: 1, item: state[ collection ][ 1 ] },
+		} );
+		expect( state.globalStyles ).toEqual( { body: { [ field ]: 'secondary' }, heading: { [ field ]: '' } } );
+		expect( state[ collection ] ).toEqual( [ { slug: 'secondary' } ] );
+	} );
+
+	it( 'clears font inheritance on deletion and omits draft metadata from saves', () => {
+		const font = { slug: '', _slugReference: 'primary', _uid: 'font-1' };
+		let state = createState( {
+			fonts: [ font ],
+			colors: [ { slug: 'brand', _slugReference: 'primary' } ],
+			globalStyles: { titleStyle: 'primary' },
+			coreComponents: { elements: { button: { inherits: 'font:primary' } }, blockStyles: [ { inherits: 'font:primary' } ] },
+		} );
+		expect( createConfigSavePayload( state ).fonts ).toEqual( [ { slug: '' } ] );
+		expect( createConfigSavePayload( state ).colors ).toEqual( [ { slug: 'brand' } ] );
+		state = configReducer( state, { type: 'SET_FONTS', payload: [], change: { type: 'remove', index: 0, item: font } } );
+		expect( state.globalStyles.titleStyle ).toBe( '' );
+		expect( state.coreComponents.elements.button.inherits ).toBe( '' );
+		expect( state.coreComponents.blockStyles[ 0 ].inherits ).toBe( '' );
+	} );
+
+	it( 'does not infer renames from reordered palette items', () => {
+		const colors = [ { slug: 'primary' }, { slug: 'secondary' } ];
+		const globalStyles = { body: { color: 'primary' } };
+		const state = configReducer( createState( { colors, globalStyles } ), { type: 'SET_COLORS', payload: [ colors[ 1 ], colors[ 0 ] ] } );
+		expect( state.globalStyles ).toBe( globalStyles );
+	} );
+} );
+
 describe( 'configurator save and rename state', () => {
 	it( 'preserves persisted template origins across empty and repeated edits', () => {
 		let state = createState( {

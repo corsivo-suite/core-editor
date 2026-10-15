@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from '@wordpress/element';
+import { useState, useEffect, useMemo, useId } from '@wordpress/element';
 import { Button, TextControl } from '@wordpress/components';
 import { useConfig } from '../../store';
 import parseGoogleFontsUrl from './parseGoogleFontsUrl';
@@ -29,70 +29,77 @@ function isLoadableGoogleFontsUrl(rawUrl) {
  */
 function GoogleFontRow({ font, onChange }) {
 	const [open, setOpen] = useState(false);
+	const panelId = useId();
 	return (
 		<div className={`ts-font-editor${open ? ' ts-font-editor--expanded' : ''}`}>
-			<div className="ts-font-editor__header" onClick={() => setOpen(!open)}>
-				<div className="ts-font-editor__summary">
-					<strong className="ts-font-editor__name">{font.family}</strong>
-					{font.weights && (
-						<span className="ts-font-editor__badge">{font.weights}</span>
-					)}
-					{font.italic && (
-						<span className="ts-font-editor__badge">italic</span>
-					)}
-					{font.varname && (
-						<code className="ts-font-editor__family">{font.varname}</code>
-					)}
-				</div>
-				<span className="ts-font-editor__toggle">
-					{open ? '\u25B2' : '\u25BC'}
-				</span>
+			<div className="ts-font-editor__header">
+				<button
+					type="button"
+					className="ts-font-editor__trigger"
+					aria-expanded={open}
+					aria-controls={panelId}
+					onClick={() => setOpen(!open)}
+				>
+					<span className="ts-font-editor__summary">
+						<strong className="ts-font-editor__name">{font.family}</strong>
+						{font.weights && (
+							<span className="ts-font-editor__badge">{font.weights}</span>
+						)}
+						{font.italic && (
+							<span className="ts-font-editor__badge">italic</span>
+						)}
+						{font.varname && (
+							<code className="ts-font-editor__family">{font.varname}</code>
+						)}
+					</span>
+					<span className="ts-font-editor__toggle" aria-hidden="true">
+						{open ? '\u25B2' : '\u25BC'}
+					</span>
+				</button>
 			</div>
-			{open && (
-				<div className="ts-font-editor__body">
-					<div className="ts-font-editor__row">
-						<TextControl
-							__next40pxDefaultSize
-							label="Font Family"
-							value={font.family}
-							disabled
-							__nextHasNoMarginBottom
-						/>
-						<TextControl
-							__next40pxDefaultSize
-							label="Weights"
-							value={font.weights || '—'}
-							disabled
-							__nextHasNoMarginBottom
-						/>
-						<TextControl
-							__next40pxDefaultSize
-							label="Italic"
-							value={font.italic ? 'Yes' : 'No'}
-							disabled
-							__nextHasNoMarginBottom
-						/>
-					</div>
-					<div className="ts-font-editor__row">
-						<TextControl
-							__next40pxDefaultSize
-							label="Variable name"
-							value={font.varname || ''}
-							onChange={(v) => onChange({ ...font, varname: sanitizeSlug(v, false) })}
-							onBlur={() =>
-								onChange({ ...font, varname: sanitizeSlug(font.varname || '') })
-							}
-							placeholder={sanitizeSlug(font.family)}
-							__nextHasNoMarginBottom
-						/>
-					</div>
-					{font.varname && (
-						<code style={{ display: 'block', padding: '0.25rem 0', opacity: 0.7 }}>
-							--wp--preset--font-family--{font.varname}
-						</code>
-					)}
+			<div className="ts-font-editor__body" id={panelId} hidden={!open}>
+				<div className="ts-font-editor__row">
+					<TextControl
+						__next40pxDefaultSize
+						label="Font Family"
+						value={font.family}
+						disabled
+						__nextHasNoMarginBottom
+					/>
+					<TextControl
+						__next40pxDefaultSize
+						label="Weights"
+						value={font.weights || '—'}
+						disabled
+						__nextHasNoMarginBottom
+					/>
+					<TextControl
+						__next40pxDefaultSize
+						label="Italic"
+						value={font.italic ? 'Yes' : 'No'}
+						disabled
+						__nextHasNoMarginBottom
+					/>
 				</div>
-			)}
+				<div className="ts-font-editor__row">
+					<TextControl
+						__next40pxDefaultSize
+						label="Variable name"
+						value={font.varname || ''}
+						onChange={(v) => onChange({ ...font, varname: sanitizeSlug(v, false) })}
+						onBlur={() =>
+							onChange({ ...font, varname: sanitizeSlug(font.varname || '') })
+						}
+						placeholder={sanitizeSlug(font.family)}
+						__nextHasNoMarginBottom
+					/>
+				</div>
+				{font.varname && (
+					<code style={{ display: 'block', padding: '0.25rem 0', opacity: 0.7 }}>
+						--wp--preset--font-family--{font.varname}
+					</code>
+				)}
+			</div>
 		</div>
 	);
 }
@@ -126,7 +133,7 @@ function GoogleFontEntry({ entry, onUpdate, onRemove }) {
 					placeholder="https://fonts.googleapis.com/css2?family=..."
 					__nextHasNoMarginBottom
 				/>
-				<Button isDestructive variant="tertiary" onClick={onRemove} isSmall>
+				<Button isDestructive variant="tertiary" onClick={onRemove} isSmall aria-label="Remove Google Fonts URL">
 					&times;
 				</Button>
 			</div>

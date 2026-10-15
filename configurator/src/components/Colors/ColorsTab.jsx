@@ -40,6 +40,7 @@ function ColorCard( { color, palette, onChange, onRemove } ) {
 					__next40pxDefaultSize
 					__nextHasNoMarginBottom
 					label="Slug"
+					help="Updates configuration references. Existing content and custom CSS keep the previous slug."
 					value={ color.slug || '' }
 					onChange={ ( slug ) =>
 						onChange( {
@@ -71,8 +72,8 @@ export default function ColorsTab() {
 		color: color.color,
 	} ) );
 
-	const setColors = ( nextColors ) => {
-		dispatch( { type: 'SET_COLORS', payload: nextColors } );
+	const setColors = ( nextColors, change ) => {
+		dispatch( { type: 'SET_COLORS', payload: nextColors, change } );
 	};
 
 	return (
@@ -110,7 +111,8 @@ export default function ColorsTab() {
 									colors,
 									index,
 									nextColor
-								)
+								),
+								{ type: 'update', index, previousItem: color, item: nextColor }
 							)
 						}
 						onRemove={ () =>
@@ -118,7 +120,8 @@ export default function ColorsTab() {
 								colors.filter(
 									( candidate, candidateIndex ) =>
 										candidateIndex !== index
-								)
+								),
+								{ type: 'remove', index, item: color }
 							)
 						}
 					/>

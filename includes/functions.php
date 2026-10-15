@@ -223,6 +223,51 @@ if (!defined('ABSPATH')) exit;
 		return $typography;
 	}
 
+	function corsivo_theme_split_css_value($value) {
+		$parts = array();
+		$part = '';
+		$depth = 0;
+		$quote = '';
+		$escaped = false;
+		$length = strlen($value);
+
+		for ($index = 0; $index < $length; $index++) {
+			$character = $value[$index];
+			if ($escaped) {
+				$part .= $character;
+				$escaped = false;
+				continue;
+			}
+			if ($character === '\\') {
+				$part .= $character;
+				$escaped = true;
+				continue;
+			}
+			if ($quote !== '') {
+				$part .= $character;
+				if ($character === $quote) $quote = '';
+				continue;
+			}
+			if ($character === '"' || $character === "'") {
+				$quote = $character;
+			} elseif ($character === '(' || $character === '[') {
+				$depth++;
+			} elseif ($character === ')' || $character === ']') {
+				$depth--;
+				if ($depth < 0) return array();
+			} elseif (ctype_space($character) && $depth === 0) {
+				if ($part !== '') $parts[] = $part;
+				$part = '';
+				continue;
+			}
+			$part .= $character;
+		}
+
+		if ($quote !== '' || $depth !== 0 || $escaped) return array();
+		if ($part !== '') $parts[] = $part;
+		return $parts;
+	}
+
 	/**
 	 * Parse a raw CSS string into theme.json-compatible structure.
 	 * Maps CSS properties to their theme.json equivalents.
@@ -232,11 +277,11 @@ if (!defined('ABSPATH')) exit;
 		if (empty($css_string)) return array();
 		$result = array();
 
-		preg_match_all('/([a-z-]+)\s*:\s*([^;]+);?/i', $css_string, $matches, PREG_SET_ORDER);
-
-		foreach ($matches as $m) {
-			$prop = strtolower(trim($m[1]));
-			$value = trim($m[2]);
+		foreach (corsivo_theme_split_css_declarations($css_string) as $declaration) {
+			$colon = strpos($declaration, ':');
+			if ($colon === false) continue;
+			$prop = strtolower(trim(substr($declaration, 0, $colon)));
+			$value = trim(substr($declaration, $colon + 1));
 			if ($value === '') continue;
 
 			switch ($prop) {
@@ -310,17 +355,16 @@ if (!defined('ABSPATH')) exit;
 					}
 					break;
 				case 'padding':
-					$parts = preg_split('/\s+/', $value);
-					$c = count($parts);
-					if ($c === 1) {
-						$result['spacing']['padding'] = array('top' => $parts[0], 'right' => $parts[0], 'bottom' => $parts[0], 'left' => $parts[0]);
-					} elseif ($c === 2) {
-						$result['spacing']['padding'] = array('top' => $parts[0], 'right' => $parts[1], 'bottom' => $parts[0], 'left' => $parts[1]);
-					} elseif ($c === 3) {
-						$result['spacing']['padding'] = array('top' => $parts[0], 'right' => $parts[1], 'bottom' => $parts[2], 'left' => $parts[1]);
-					} elseif ($c >= 4) {
-						$result['spacing']['padding'] = array('top' => $parts[0], 'right' => $parts[1], 'bottom' => $parts[2], 'left' => $parts[3]);
-					}
+				case 'margin':
+					$parts = corsivo_theme_split_css_value($value);
+					$count = count($parts);
+					if ($count < 1 || $count > 4) break;
+					$result['spacing'][$prop] = array(
+						'top' => $parts[0],
+						'right' => $parts[1] ?? $parts[0],
+						'bottom' => $parts[2] ?? $parts[0],
+						'left' => $parts[3] ?? $parts[1] ?? $parts[0],
+					);
 					break;
 				case 'padding-top':
 					$result['spacing']['padding']['top'] = $value;
@@ -333,17 +377,6 @@ if (!defined('ABSPATH')) exit;
 					break;
 				case 'padding-left':
 					$result['spacing']['padding']['left'] = $value;
-					break;
-				case 'margin':
-					$parts = preg_split('/\s+/', $value);
-					$c = count($parts);
-					if ($c === 1) {
-						$result['spacing']['margin'] = array('top' => $parts[0], 'right' => $parts[0], 'bottom' => $parts[0], 'left' => $parts[0]);
-					} elseif ($c === 2) {
-						$result['spacing']['margin'] = array('top' => $parts[0], 'right' => $parts[1], 'bottom' => $parts[0], 'left' => $parts[1]);
-					} elseif ($c >= 4) {
-						$result['spacing']['margin'] = array('top' => $parts[0], 'right' => $parts[1], 'bottom' => $parts[2], 'left' => $parts[3]);
-					}
 					break;
 				case 'margin-top':
 					$result['spacing']['margin']['top'] = $value;
@@ -801,7 +834,6 @@ if (!defined('ABSPATH')) exit;
 
 				foreach ($core_components['blockStyles'] as $bs) {
 					if (empty($bs['target']) || empty($bs['slug'])) continue;
-					if (!empty($bs['hideInEditor'])) continue;
 					if (array_key_exists('register', $bs) && !$bs['register']) continue;
 
 					// Resolve inheritance chain for theme.json
@@ -1096,7 +1128,7 @@ if (!defined('ABSPATH')) exit;
 	 */
 	function corsivo_theme_get_frontend_default_block_selectors($selector = '', $type = 'paragraph') {
 		$areas = array('.entry-content', '.wp-block-post-content');
-		$prefix = $selector ? $selector . ' ' : '';
+		$prefix = ':root ' . ($selector ? $selector . ' ' : '');
 		$selectors = array();
 
 		if ($type === 'paragraph') {
@@ -1186,6 +1218,7 @@ if (!defined('ABSPATH')) exit;
 			if ($paragraph_css && !empty($paragraph_selectors)) {
 				$css .= implode(',', $paragraph_selectors) . ' {' . $paragraph_css . '}' . "\n";
 			}
+			$css .= corsivo_theme_generate_font_reference_breakpoint_css($settings['defaultParagraphStyle'], $paragraph_selectors);
 		}
 
 		if (!empty($settings['defaultHeadingStyle'])) {
@@ -1197,6 +1230,7 @@ if (!defined('ABSPATH')) exit;
 			if ($heading_css && !empty($heading_selectors)) {
 				$css .= implode(',', $heading_selectors) . ' {' . $heading_css . '}' . "\n";
 			}
+			$css .= corsivo_theme_generate_font_reference_breakpoint_css($settings['defaultHeadingStyle'], $heading_selectors);
 		}
 
 		return $css;
@@ -1219,7 +1253,8 @@ if (!defined('ABSPATH')) exit;
 		}
 
 		return '/* Global page title */' . "\n"
-			. implode(',', corsivo_theme_get_frontend_page_title_selectors('body')) . ' {' . $title_css . '}' . "\n";
+			. implode(',', corsivo_theme_get_frontend_page_title_selectors('body')) . ' {' . $title_css . '}' . "\n"
+			. corsivo_theme_generate_font_reference_breakpoint_css($title_style, corsivo_theme_get_frontend_page_title_selectors('body'));
 	}
 
 	/**
@@ -1239,7 +1274,26 @@ if (!defined('ABSPATH')) exit;
 		}
 
 		return '/* Global page title */' . "\n"
-			. implode(',', corsivo_theme_get_editor_page_title_selectors()) . ' {' . $title_css . '}' . "\n";
+			. implode(',', corsivo_theme_get_editor_page_title_selectors()) . ' {' . $title_css . '}' . "\n"
+			. corsivo_theme_generate_font_reference_breakpoint_css($title_style, corsivo_theme_get_editor_page_title_selectors());
+	}
+
+	function corsivo_theme_generate_global_font_breakpoint_css($is_editor = false) {
+		$settings = apply_filters('corsivo_theme_global_styles', array());
+		$body_selector = $is_editor ? '.editor-styles-wrapper' : 'body';
+		$css = '';
+		if (!empty($settings['body']['font'])) {
+			$css .= corsivo_theme_generate_font_reference_breakpoint_css($settings['body']['font'], array($body_selector));
+		}
+		if (!empty($settings['heading']['font'])) {
+			$selectors = array();
+			for ($level = 1; $level <= 6; $level++) {
+				$selectors[] = ($is_editor ? '' : ':root ') . $body_selector . ' :where(h' . $level . ':not([class*="is-style-font-"]))';
+			}
+			$font_weight = !empty($settings['heading']['fontWeight']) ? 'font-weight:' . $settings['heading']['fontWeight'] . ';' : '';
+			$css .= corsivo_theme_generate_font_reference_breakpoint_css($settings['heading']['font'], $selectors, $font_weight);
+		}
+		return $css;
 	}
 
 	/**
@@ -1298,6 +1352,9 @@ if (!defined('ABSPATH')) exit;
 					$css .= $selector . ' .wp-site-blocks {' . $bg_css . '}' . "\n";
 				}
 			}
+			if (!empty($body['font'])) {
+				$css .= corsivo_theme_generate_font_reference_breakpoint_css($body['font'], array($selector));
+			}
 		}
 
 		// Heading overrides
@@ -1316,10 +1373,15 @@ if (!defined('ABSPATH')) exit;
 			}
 			if ($heading_css) {
 				$heading_selectors = array();
+				$heading_prefix = !empty($heading['font']) || !empty($heading['fontWeight']) ? ':root ' : '';
 				for ($i = 1; $i <= 6; $i++) {
-					$heading_selectors[] = $selector . ' :where(h' . $i . ':not(.entry-title):not(.page-title):not(.wp-block-post-title):not(.archive-title):not([class*="is-style-font-"]))';
+					$heading_selectors[] = $heading_prefix . $selector . ' :where(h' . $i . ':not(.entry-title):not(.page-title):not(.wp-block-post-title):not(.archive-title):not([class*="is-style-font-"]))';
 				}
 				$css .= implode(',', $heading_selectors) . ' {' . $heading_css . '}' . "\n";
+				if (!empty($heading['font'])) {
+					$font_weight = !empty($heading['fontWeight']) ? 'font-weight:' . $heading['fontWeight'] . ';' : '';
+					$css .= corsivo_theme_generate_font_reference_breakpoint_css($heading['font'], $heading_selectors, $font_weight);
+				}
 			}
 		}
 
@@ -1329,6 +1391,7 @@ if (!defined('ABSPATH')) exit;
 			if ($title_css) {
 				$css .= implode(',', corsivo_theme_get_frontend_page_title_selectors($selector)) . ' {' . $title_css . '}' . "\n";
 			}
+			$css .= corsivo_theme_generate_font_reference_breakpoint_css($tpl['titleStyle'], corsivo_theme_get_frontend_page_title_selectors($selector));
 		}
 
 		// Default paragraph / heading block overrides
@@ -1507,7 +1570,8 @@ if (!defined('ABSPATH')) exit;
 	 * Loads AFTER WordPress global-styles to guarantee override.
 	 */
 	function corsivo_theme_enqueue_global_styles() {
-		$css = corsivo_theme_generate_global_page_title_css()
+		$css = corsivo_theme_generate_global_font_breakpoint_css()
+			. corsivo_theme_generate_global_page_title_css()
 			. corsivo_theme_generate_global_default_block_css()
 			. corsivo_theme_generate_context_css();
 		if (empty(trim($css))) return;
@@ -1746,7 +1810,6 @@ if (!defined('ABSPATH')) exit;
 
 	/**
 	 * Register custom block style variations from core_components.blockStyles.
-	 * Also unregister hidden core block styles.
 	 */
 	function corsivo_theme_register_cc_block_styles() {
 		$config = corsivo_theme_get_settings();
@@ -1758,20 +1821,6 @@ if (!defined('ABSPATH')) exit;
 		foreach ($block_styles as $bs) {
 			if (empty($bs['target']) || empty($bs['slug'])) continue;
 			if (array_key_exists('register', $bs) && !$bs['register']) continue;
-
-			// Hidden styles: only unregister non-core ones via PHP.
-			// Core block.json styles (fromCore) can't be removed with
-			// unregister_block_style — they are handled via JS in the editor
-			// (see corsivo_theme_editor_context_styles section 6).
-			if (!empty($bs['hideInEditor'])) {
-				if (empty($bs['fromCore'])) {
-					$registry = WP_Block_Styles_Registry::get_instance();
-					if ($registry->is_registered($bs['target'], $bs['slug'])) {
-						unregister_block_style($bs['target'], $bs['slug']);
-					}
-				}
-				continue;
-			}
 
 			// Register custom (non-core) styles
 			if (empty($bs['fromCore'])) {
@@ -2100,7 +2149,6 @@ if (!defined('ABSPATH')) exit;
 
 		foreach ($block_styles as $bs) {
 			if (empty($bs['target']) || empty($bs['slug'])) continue;
-			if (!empty($bs['hideInEditor'])) continue;
 
 			// Resolve inheritance chain
 			$resolved_css = corsivo_theme_resolve_inherits_css($bs, $fonts, $block_styles);
@@ -2156,7 +2204,24 @@ if (!defined('ABSPATH')) exit;
 	add_action('enqueue_block_editor_assets', 'corsivo_theme_enqueue_cc_block_styles_css');
 
 	function corsivo_theme_generate_font_breakpoint_css($font, $selector_prefix = '') {
-		if (empty($font['slug']) || empty($font['breakpoints']) || !is_array($font['breakpoints'])) return '';
+		if (empty($font['slug'])) return '';
+		$slug = sanitize_html_class($font['slug']);
+		$selectors = array($selector_prefix . '.' . $slug, $selector_prefix . '.is-style-font-' . $slug);
+		return corsivo_theme_generate_font_breakpoint_rules($font, $selectors);
+	}
+
+	function corsivo_theme_generate_font_reference_breakpoint_css($slug, $selectors, $declarations = '') {
+		if (empty($slug) || empty($selectors)) return '';
+		foreach (apply_filters('corsivo_theme_fonts', array()) as $font) {
+			if (($font['slug'] ?? '') === $slug) {
+				return corsivo_theme_generate_font_breakpoint_rules($font, $selectors, $declarations);
+			}
+		}
+		return '';
+	}
+
+	function corsivo_theme_generate_font_breakpoint_rules($font, $selectors, $declarations = '') {
+		if (empty($selectors) || empty($font['breakpoints']) || !is_array($font['breakpoints'])) return '';
 
 		$breakpoint_widths = apply_filters('corsivo_theme_breakpoints', array());
 		$overrides = array();
@@ -2174,12 +2239,9 @@ if (!defined('ABSPATH')) exit;
 			return $b['width'] <=> $a['width'];
 		});
 
-		$slug = sanitize_html_class($font['slug']);
-		$selectors = $selector_prefix . '.' . $slug . ',' . $selector_prefix . '.is-style-font-' . $slug;
-
 		$css = '';
 		foreach ($overrides as $override) {
-			$css .= '@media (max-width: ' . $override['width'] . 'px){' . $selectors . '{' . $override['css'] . '}}' . "\n";
+			$css .= '@media (max-width: ' . $override['width'] . 'px){' . implode(',', $selectors) . '{' . $override['css'] . $declarations . '}}' . "\n";
 		}
 
 		return $css;
@@ -2289,6 +2351,7 @@ if (!defined('ABSPATH')) exit;
 			if (!empty($body['color']))      $s .= 'color:' . corsivo_theme_color_var($body['color']) . ';';
 			if (!empty($body['font']))       $s .= corsivo_theme_font_css_declarations($body['font']);
 			if ($s) $css .= $sel . '{' . $s . '}' . "\n";
+			if (!empty($body['font'])) $css .= corsivo_theme_generate_font_reference_breakpoint_css($body['font'], array($sel));
 		}
 
 		// Headings
@@ -2302,6 +2365,10 @@ if (!defined('ABSPATH')) exit;
 				$h = array();
 				for ($i = 1; $i <= 6; $i++) $h[] = $sel . ' h' . $i;
 				$css .= implode(',', $h) . '{' . $s . '}' . "\n";
+				if (!empty($heading['font'])) {
+					$font_weight = !empty($heading['fontWeight']) ? 'font-weight:' . $heading['fontWeight'] . ';' : '';
+					$css .= corsivo_theme_generate_font_reference_breakpoint_css($heading['font'], $h, $font_weight);
+				}
 			}
 		}
 
@@ -2311,6 +2378,7 @@ if (!defined('ABSPATH')) exit;
 			if ($title_css) {
 				$css .= implode(',', corsivo_theme_get_editor_page_title_selectors()) . '{' . $title_css . '}' . "\n";
 			}
+			$css .= corsivo_theme_generate_font_reference_breakpoint_css($tpl['titleStyle'], corsivo_theme_get_editor_page_title_selectors());
 		}
 
 		// Default paragraph / heading blocks
@@ -2360,7 +2428,8 @@ if (!defined('ABSPATH')) exit;
 		$matched_tpl = corsivo_theme_resolve_style_template_for_post($post, $style_templates, $context_styles);
 		$global_title_css = corsivo_theme_generate_editor_global_page_title_css();
 		$global_default_block_css = corsivo_theme_generate_editor_global_default_block_css();
-		$automatic_css = $global_title_css . $global_default_block_css;
+		$global_font_css = corsivo_theme_generate_global_font_breakpoint_css(true);
+		$automatic_css = $global_font_css . $global_title_css . $global_default_block_css;
 		if ($matched_tpl) {
 			$automatic_css .= corsivo_theme_generate_editor_template_css($matched_tpl);
 		}
@@ -2424,7 +2493,7 @@ if (!defined('ABSPATH')) exit;
 			$css_map = array();
 			foreach ($style_templates as $tpl) {
 				if (empty($tpl['slug'])) continue;
-				$css_map[$tpl['slug']] = $global_title_css . $global_default_block_css . corsivo_theme_generate_editor_template_css($tpl);
+				$css_map[$tpl['slug']] = $global_font_css . $global_title_css . $global_default_block_css . corsivo_theme_generate_editor_template_css($tpl);
 			}
 
 			wp_enqueue_script(

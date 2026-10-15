@@ -4,6 +4,7 @@ import {
 	useEffect,
 	useRef,
 	useCallback,
+	useId,
 } from '@wordpress/element';
 import {
 	Button,
@@ -257,6 +258,7 @@ function CssEditor({ selector, css, onCssChange, pseudoStates, item, onChange })
 /* ------------------------------------------------------------------ */
 
 function FontCard({ font, expanded, onToggle, onChange, onRemove, onDuplicate }) {
+	const panelId = useId();
 	const { state } = useConfig();
 
 	const update = useCallback(
@@ -354,196 +356,202 @@ function FontCard({ font, expanded, onToggle, onChange, onRemove, onDuplicate })
 		<div
 			className={`ts-font-editor ${expanded ? 'ts-font-editor--expanded' : ''}`}
 		>
-			<div className="ts-font-editor__header" onClick={onToggle}>
-				<div className="ts-font-editor__summary">
-					<strong className="ts-font-editor__name">
-						{font.name || font.slug}
-					</strong>
-					{cssSummary.family && (
-						<code className="ts-font-editor__family">
-							{cssSummary.family}
-						</code>
-					)}
-					{cssSummary.size && (
-						<span className="ts-font-editor__size">
-							{cssSummary.size}
+			<div className="ts-font-editor__header">
+				<button
+					type="button"
+					className="ts-font-editor__trigger"
+					onClick={onToggle}
+					aria-expanded={expanded}
+					aria-controls={panelId}
+				>
+					<span className="ts-font-editor__summary">
+						<strong className="ts-font-editor__name">
+							{font.name || font.slug || 'Untitled font style'}
+						</strong>
+						{cssSummary.family && (
+							<code className="ts-font-editor__family">
+								{cssSummary.family}
+							</code>
+						)}
+						{cssSummary.size && (
+							<span className="ts-font-editor__size">
+								{cssSummary.size}
+							</span>
+						)}
+						<span className="ts-font-editor__scope">
+							{getScopeLabel()}
 						</span>
-					)}
-					<span className="ts-font-editor__scope">
-						{getScopeLabel()}
+						{bpCount > 0 && (
+							<span className="ts-font-editor__badge">
+								{bpCount} bp
+							</span>
+						)}
 					</span>
-					{bpCount > 0 && (
-						<span className="ts-font-editor__badge">
-							{bpCount} bp
-						</span>
-					)}
-				</div>
-				<div>
+					<span className="ts-font-editor__toggle" aria-hidden="true">{expanded ? '▲' : '▼'}</span>
+				</button>
+				<div className="ts-font-editor__header-actions">
 					<button
+						type="button"
 						className="ts-font-editor__delete"
-						onClick={(e) => {
-							e.stopPropagation();
-							onRemove();
-						}}
+						onClick={onRemove}
+						aria-label={`Remove ${font.name || font.slug || 'font style'}`}
 						title="Remove"
 					>
 						&#10005;
 					</button>
-					<span className="ts-font-editor__toggle">
-						{expanded ? '▲' : '▼'}
-					</span>
 				</div>
 			</div>
 
-			{expanded && (
-				<div className="ts-font-editor__body">
-					<div className="ts-font-editor__fields">
-						<div className="ts-font-editor__row">
-							<TextControl
-								__next40pxDefaultSize
-								label="Name"
-								value={font.name || ''}
-								onChange={(v) => update('name', v)}
-								__nextHasNoMarginBottom
-							/>
-							<TextControl
-								__next40pxDefaultSize
-								label="Slug"
-								value={font.slug || ''}
+			<div className="ts-font-editor__body" id={panelId} hidden={!expanded}>
+				{expanded && <>
+				<div className="ts-font-editor__fields">
+					<div className="ts-font-editor__row">
+						<TextControl
+							__next40pxDefaultSize
+							label="Name"
+							value={font.name || ''}
+							onChange={(v) => update('name', v)}
+							__nextHasNoMarginBottom
+						/>
+						<TextControl
+							__next40pxDefaultSize
+							label="Slug"
+							help="Updates configuration references. Existing content and custom CSS keep the previous slug."
+							value={font.slug || ''}
+							onChange={(v) =>
+								update('slug', sanitizeSlug(v, false))
+							}
+							onBlur={() =>
+								update(
+									'slug',
+									sanitizeSlug(font.slug || '')
+								)
+							}
+							__nextHasNoMarginBottom
+						/>
+					</div>
+
+					<div className="ts-font-editor__row ts-font-editor__options">
+						<div className="ts-font-editor__scope-checks">
+							<span className="ts-font-editor__label">
+								Scope
+							</span>
+							<CheckboxControl
+								label="Heading"
+								checked={hasHeading}
 								onChange={(v) =>
-									update('slug', sanitizeSlug(v, false))
+									handleScopeChange('heading', v)
 								}
-								onBlur={() =>
-									update(
-										'slug',
-										sanitizeSlug(font.slug || '')
-									)
+								__nextHasNoMarginBottom
+							/>
+							<CheckboxControl
+								label="Paragraph"
+								checked={hasParagraph}
+								onChange={(v) =>
+									handleScopeChange('paragraph', v)
 								}
 								__nextHasNoMarginBottom
 							/>
 						</div>
+						<ToggleControl
+							label="Hide in editor"
+							checked={!!font.hide}
+							onChange={(v) => update('hide', v)}
+							__nextHasNoMarginBottom
+						/>
+					</div>
 
-						<div className="ts-font-editor__row ts-font-editor__options">
-							<div className="ts-font-editor__scope-checks">
-								<span className="ts-font-editor__label">
-									Scope
-								</span>
-								<CheckboxControl
-									label="Heading"
-									checked={hasHeading}
-									onChange={(v) =>
-										handleScopeChange('heading', v)
-									}
-									__nextHasNoMarginBottom
-								/>
-								<CheckboxControl
-									label="Paragraph"
-									checked={hasParagraph}
-									onChange={(v) =>
-										handleScopeChange('paragraph', v)
-									}
-									__nextHasNoMarginBottom
-								/>
-							</div>
-							<ToggleControl
-								label="Hide in editor"
-								checked={!!font.hide}
-								onChange={(v) => update('hide', v)}
-								__nextHasNoMarginBottom
-							/>
-						</div>
-
-						{/* CSS code block */}
-						<div className="ts-font-editor__css-block">
-							{installedFontOptions.length > 0 && (
-								<div className="ts-font-editor__font-picker">
-									{showFontPicker ? (
-										<div className="ts-font-editor__font-picker-row">
-											<SelectControl
-												__next40pxDefaultSize
-												value=""
-												options={[
-													{
-														label: '— Pick a font —',
-														value: '',
-													},
-													...installedFontOptions,
-												]}
-												onChange={handleFontPick}
-												__nextHasNoMarginBottom
-											/>
-											<Button
-												variant="tertiary"
-												isSmall
-												onClick={() =>
-													setShowFontPicker(false)
-												}
-											>
-												Cancel
-											</Button>
-										</div>
-									) : (
+					{/* CSS code block */}
+					<div className="ts-font-editor__css-block">
+						{installedFontOptions.length > 0 && (
+							<div className="ts-font-editor__font-picker">
+								{showFontPicker ? (
+									<div className="ts-font-editor__font-picker-row">
+										<SelectControl
+											__next40pxDefaultSize
+											value=""
+											options={[
+												{
+													label: '— Pick a font —',
+													value: '',
+												},
+												...installedFontOptions,
+											]}
+											onChange={handleFontPick}
+											__nextHasNoMarginBottom
+										/>
 										<Button
 											variant="tertiary"
 											isSmall
 											onClick={() =>
-												setShowFontPicker(true)
+												setShowFontPicker(false)
 											}
 										>
-											Pick installed font
+											Cancel
 										</Button>
-									)}
-								</div>
-							)}
-							<div className="ts-font-editor__css-context">
-								<code className="ts-font-editor__css-selector">
-									.{slug}
-									{', '}
-									.is-style-font-{slug}
-								</code>
-								<span className="ts-font-editor__css-brace">
-									{' {'}
-								</span>
-								<AutoTextarea
-									className="ts-font-editor__css-textarea"
-									value={font.css || ''}
-									onChange={(e) =>
-										update('css', e.target.value)
-									}
-									rows={1}
-								/>
-								<span className="ts-font-editor__css-brace">
-									{'}'}
-								</span>
+									</div>
+								) : (
+									<Button
+										variant="tertiary"
+										isSmall
+										onClick={() =>
+											setShowFontPicker(true)
+										}
+									>
+										Pick installed font
+									</Button>
+								)}
 							</div>
+						)}
+						<div className="ts-font-editor__css-context">
+							<code className="ts-font-editor__css-selector">
+								.{slug}
+								{', '}
+								.is-style-font-{slug}
+							</code>
+							<span className="ts-font-editor__css-brace">
+								{' {'}
+							</span>
+							<AutoTextarea
+								className="ts-font-editor__css-textarea"
+								value={font.css || ''}
+								onChange={(e) =>
+									update('css', e.target.value)
+								}
+								rows={1}
+							/>
+							<span className="ts-font-editor__css-brace">
+								{'}'}
+							</span>
 						</div>
 					</div>
-
-					<BreakpointOverrides
-						fontSlug={font.slug}
-						breakpoints={font.breakpoints || {}}
-						onChange={(bp) => update('breakpoints', bp)}
-					/>
-
-					<FontPreview font={font} />
-
-					<div className="ts-font-editor__actions">
-						<Button
-							variant="tertiary"
-							onClick={onDuplicate}
-						>
-							Duplicate
-						</Button>
-						<Button
-							isDestructive
-							variant="tertiary"
-							onClick={onRemove}
-						>
-							Remove font
-						</Button>
-					</div>
 				</div>
-			)}
+
+				<BreakpointOverrides
+					fontSlug={font.slug}
+					breakpoints={font.breakpoints || {}}
+					onChange={(bp) => update('breakpoints', bp)}
+				/>
+
+				<FontPreview font={font} />
+
+				<div className="ts-font-editor__actions">
+					<Button
+						variant="tertiary"
+						onClick={onDuplicate}
+					>
+						Duplicate
+					</Button>
+					<Button
+						isDestructive
+						variant="tertiary"
+						onClick={onRemove}
+					>
+						Remove font
+					</Button>
+				</div>
+				</>}
+			</div>
 		</div>
 	);
 }
@@ -563,6 +571,7 @@ function CustomCard({
 	existingElements,
 	inheritOptions,
 }) {
+	const panelId = useId();
 	const isElement = item._src === 'element';
 	const pseudoStates = isElement
 		? ELEMENT_DEFS[item.target]?.pseudoStates || []
@@ -629,163 +638,168 @@ function CustomCard({
 		<div
 			className={`ts-font-editor${expanded ? ' ts-font-editor--expanded' : ''}`}
 		>
-			<div className="ts-font-editor__header" onClick={onToggle}>
-				<div className="ts-font-editor__summary">
-					<strong className="ts-font-editor__name">
-						{headerName}
-					</strong>
-					{headerSub && (
-						<code className="ts-font-editor__family">
-							{headerSub}
-						</code>
-					)}
-					{isElement && (
-						<span className="ts-font-editor__badge">
-							element
-						</span>
-					)}
-					{inheritsLabel && (
-						<span className="ts-font-editor__badge">
-							&#8592; {inheritsLabel}
-						</span>
-					)}
-					{warnings.length > 0 && (
-						<span className="ts-font-editor__badge ts-font-editor__badge--warn">
-							{warnings.length}
-							{warnings.length > 1 ? ' warnings' : ' warning'}
-						</span>
-					)}
-				</div>
-				<div>
+			<div className="ts-font-editor__header">
+				<button
+					type="button"
+					className="ts-font-editor__trigger"
+					onClick={onToggle}
+					aria-expanded={expanded}
+					aria-controls={panelId}
+				>
+					<span className="ts-font-editor__summary">
+						<strong className="ts-font-editor__name">
+							{headerName}
+						</strong>
+						{headerSub && (
+							<code className="ts-font-editor__family">
+								{headerSub}
+							</code>
+						)}
+						{isElement && (
+							<span className="ts-font-editor__badge">
+								element
+							</span>
+						)}
+						{inheritsLabel && (
+							<span className="ts-font-editor__badge">
+								&#8592; {inheritsLabel}
+							</span>
+						)}
+						{warnings.length > 0 && (
+							<span className="ts-font-editor__badge ts-font-editor__badge--warn">
+								{warnings.length}
+								{warnings.length > 1 ? ' warnings' : ' warning'}
+							</span>
+						)}
+					</span>
+					<span className="ts-font-editor__toggle" aria-hidden="true">{expanded ? '▲' : '▼'}</span>
+				</button>
+				<div className="ts-font-editor__header-actions">
 					<button
+						type="button"
 						className="ts-font-editor__delete"
-						onClick={(e) => {
-							e.stopPropagation();
-							onRemove();
-						}}
+						onClick={onRemove}
+						aria-label={`Remove ${headerName}`}
 						title="Remove"
 					>
 						&#10005;
 					</button>
-					<span className="ts-font-editor__toggle">
-						{expanded ? '▲' : '▼'}
-					</span>
 				</div>
 			</div>
 
-			{expanded && (
-				<div className="ts-font-editor__body">
-					<div className="ts-cc-row ts-cc-row--target">
-						<SelectControl
+			<div className="ts-font-editor__body" id={panelId} hidden={!expanded}>
+				{expanded && <>
+				<div className="ts-cc-row ts-cc-row--target">
+					<SelectControl
+						__next40pxDefaultSize
+						label="Target"
+						value={targetVal}
+						options={targetOptions}
+						onChange={onTargetChange}
+						__nextHasNoMarginBottom
+					/>
+					{!isElement && (
+						<>
+							<CheckboxControl
+								label="Default"
+								checked={!!item.isDefault}
+								onChange={(v) =>
+									onChange({ isDefault: v })
+								}
+								__nextHasNoMarginBottom
+							/>
+							<CheckboxControl
+								label="Hide in editor"
+								checked={!!item.hideInEditor}
+								onChange={(v) =>
+									onChange({ hideInEditor: v })
+								}
+								__nextHasNoMarginBottom
+							/>
+						</>
+					)}
+				</div>
+
+				{!isElement && (
+					<div className="ts-cc-row">
+						<TextControl
 							__next40pxDefaultSize
-							label="Target"
-							value={targetVal}
-							options={targetOptions}
-							onChange={onTargetChange}
+							label="Name"
+							value={item.name || ''}
+							onChange={(v) => onChange({ name: v })}
 							__nextHasNoMarginBottom
 						/>
-						{!isElement && (
-							<>
-								<CheckboxControl
-									label="Default"
-									checked={!!item.isDefault}
-									onChange={(v) =>
-										onChange({ isDefault: v })
-									}
-									__nextHasNoMarginBottom
-								/>
-								<CheckboxControl
-									label="Hide in editor"
-									checked={!!item.hideInEditor}
-									onChange={(v) =>
-										onChange({ hideInEditor: v })
-									}
-									__nextHasNoMarginBottom
-								/>
-							</>
-						)}
+						<TextControl
+							__next40pxDefaultSize
+							label="Slug"
+							value={item.slug || ''}
+							onChange={(v) =>
+								onChange({ slug: sanitizeSlug(v, false) })
+							}
+							onBlur={(e) =>
+								onChange({ slug: sanitizeSlug(e.target.value) })
+							}
+							__nextHasNoMarginBottom
+						/>
 					</div>
+				)}
 
-					{!isElement && (
-						<div className="ts-cc-row">
-							<TextControl
-								__next40pxDefaultSize
-								label="Name"
-								value={item.name || ''}
-								onChange={(v) => onChange({ name: v })}
-								__nextHasNoMarginBottom
-							/>
-							<TextControl
-								__next40pxDefaultSize
-								label="Slug"
-								value={item.slug || ''}
-								onChange={(v) =>
-									onChange({ slug: sanitizeSlug(v, false) })
-								}
-								onBlur={(e) =>
-									onChange({ slug: sanitizeSlug(e.target.value) })
-								}
-								__nextHasNoMarginBottom
-							/>
-						</div>
-					)}
+				{!isElement && inheritOptions && inheritOptions.length > 1 && (
+					<div className="ts-cc-row">
+						<SelectControl
+							__next40pxDefaultSize
+							label="Base style (inherit CSS)"
+							value={item.inherits || ''}
+							options={inheritOptions}
+							onChange={(v) =>
+								onChange({ inherits: v || '' })
+							}
+							__nextHasNoMarginBottom
+						/>
+					</div>
+				)}
 
-					{!isElement && inheritOptions && inheritOptions.length > 1 && (
-						<div className="ts-cc-row">
-							<SelectControl
-								__next40pxDefaultSize
-								label="Base style (inherit CSS)"
-								value={item.inherits || ''}
-								options={inheritOptions}
-								onChange={(v) =>
-									onChange({ inherits: v || '' })
-								}
-								__nextHasNoMarginBottom
-							/>
-						</div>
-					)}
+				<CssEditor
+					selector={selector}
+					css={item.css || ''}
+					onCssChange={(v) => onChange({ css: v })}
+					pseudoStates={pseudoStates}
+					item={item}
+					onChange={onChange}
+				/>
 
-					<CssEditor
-						selector={selector}
-						css={item.css || ''}
-						onCssChange={(v) => onChange({ css: v })}
-						pseudoStates={pseudoStates}
-						item={item}
-						onChange={onChange}
-					/>
-
-					{warnings.length > 0 && (
-						<div className="ts-cc-warnings">
-							{warnings.map((w, i) => (
-								<div
-									key={i}
-									className="ts-cc-warnings__item"
-								>
-									&#9888; {w}
-								</div>
-							))}
-						</div>
-					)}
-
-					<div className="ts-font-editor__actions">
-						{!isElement && (
-							<Button
-								variant="tertiary"
-								onClick={onDuplicate}
+				{warnings.length > 0 && (
+					<div className="ts-cc-warnings">
+						{warnings.map((w, i) => (
+							<div
+								key={i}
+								className="ts-cc-warnings__item"
 							>
-								Duplicate
-							</Button>
-						)}
-						<Button
-							isDestructive
-							variant="tertiary"
-							onClick={onRemove}
-						>
-							Remove
-						</Button>
+								&#9888; {w}
+							</div>
+						))}
 					</div>
+				)}
+
+				<div className="ts-font-editor__actions">
+					{!isElement && (
+						<Button
+							variant="tertiary"
+							onClick={onDuplicate}
+						>
+							Duplicate
+						</Button>
+					)}
+					<Button
+						isDestructive
+						variant="tertiary"
+						onClick={onRemove}
+					>
+						Remove
+					</Button>
 				</div>
-			)}
+				</>}
+			</div>
 		</div>
 	);
 }
@@ -795,6 +809,7 @@ function CustomCard({
 /* ------------------------------------------------------------------ */
 
 function CoreCard({ item, expanded, onToggle, onChange }) {
+	const panelId = useId();
 	const wrapper = `.${blockToClass(item.target)}.is-style-${item.slug}`;
 	const inner = INNER_ELEMENT_MAP[item.target];
 	const selector = inner ? `${wrapper} ${inner}` : wrapper;
@@ -806,69 +821,74 @@ function CoreCard({ item, expanded, onToggle, onChange }) {
 		<div
 			className={`ts-font-editor${expanded ? ' ts-font-editor--expanded' : ''}${item.hideInEditor ? ' ts-font-editor--hidden' : ''}`}
 		>
-			<div className="ts-font-editor__header" onClick={onToggle}>
-				<div className="ts-font-editor__summary">
-					<strong className="ts-font-editor__name">
-						{item.name || item.slug}
-					</strong>
-					<code className="ts-font-editor__family">
-						{blockLabel}
-					</code>
-					{item.isDefault && (
-						<span className="ts-font-editor__badge">
-							Default
-						</span>
-					)}
-					{item.hideInEditor && (
-						<span className="ts-font-editor__badge ts-font-editor__badge--destructive">
-							Hidden
-						</span>
-					)}
-				</div>
-				<div>
+			<div className="ts-font-editor__header">
+				<button
+					type="button"
+					className="ts-font-editor__trigger"
+					onClick={onToggle}
+					aria-expanded={expanded}
+					aria-controls={panelId}
+				>
+					<span className="ts-font-editor__summary">
+						<strong className="ts-font-editor__name">
+							{item.name || item.slug}
+						</strong>
+						<code className="ts-font-editor__family">
+							{blockLabel}
+						</code>
+						{item.isDefault && (
+							<span className="ts-font-editor__badge">
+								Default
+							</span>
+						)}
+						{item.hideInEditor && (
+							<span className="ts-font-editor__badge ts-font-editor__badge--destructive">
+								Hidden
+							</span>
+						)}
+					</span>
+					<span className="ts-font-editor__toggle" aria-hidden="true">{expanded ? '▲' : '▼'}</span>
+				</button>
+				<div className="ts-font-editor__header-actions">
 					<button
+						type="button"
 						className={`ts-font-editor__hide-btn${item.hideInEditor ? ' ts-font-editor__hide-btn--active' : ''}`}
-						onClick={(e) => {
-							e.stopPropagation();
-							onChange({ hideInEditor: !item.hideInEditor });
-						}}
+						onClick={() => onChange({ hideInEditor: !item.hideInEditor })}
+						aria-label={`${item.hideInEditor ? 'Show' : 'Hide'} ${item.name || item.slug} in editor`}
 						title={item.hideInEditor ? 'Show in editor' : 'Hide from editor'}
 					>
 						{item.hideInEditor ? 'Show' : 'Hide'}
 					</button>
-					<span className="ts-font-editor__toggle">
-						{expanded ? '▲' : '▼'}
-					</span>
 				</div>
 			</div>
 
-			{expanded && (
-				<div className="ts-font-editor__body">
-					<div className="ts-cc-row ts-cc-row--target">
-						<CheckboxControl
-							label="Default"
-							checked={!!item.isDefault}
-							onChange={(v) => onChange({ isDefault: v })}
-							__nextHasNoMarginBottom
-						/>
-						<CheckboxControl
-							label="Hide in editor"
-							checked={!!item.hideInEditor}
-							onChange={(v) => onChange({ hideInEditor: v })}
-							__nextHasNoMarginBottom
-						/>
-					</div>
-
-					<CssEditor
-						selector={selector}
-						css={item.css || ''}
-						onCssChange={(v) => onChange({ css: v })}
-						pseudoStates={[':hover']}
-						item={item}
-						onChange={onChange}
+			<div className="ts-font-editor__body" id={panelId} hidden={!expanded}>
+				{expanded && <>
+				<div className="ts-cc-row ts-cc-row--target">
+					<CheckboxControl
+						label="Default"
+						checked={!!item.isDefault}
+						onChange={(v) => onChange({ isDefault: v })}
+						__nextHasNoMarginBottom
+					/>
+					<CheckboxControl
+						label="Hide in editor"
+						checked={!!item.hideInEditor}
+						onChange={(v) => onChange({ hideInEditor: v })}
+						__nextHasNoMarginBottom
 					/>
 				</div>
-			)}
+
+				<CssEditor
+					selector={selector}
+					css={item.css || ''}
+					onCssChange={(v) => onChange({ css: v })}
+					pseudoStates={[':hover']}
+					item={item}
+					onChange={onChange}
+				/>
+				</>}
+			</div>
 		</div>
 	);
 }
@@ -915,6 +935,7 @@ export default function StylesTab() {
 	/* ---------- Shared accordion state ---------- */
 	const [expandedKey, setExpandedKey] = useState(null);
 	const [newCardOpen, setNewCardOpen] = useState(false);
+	const newCardPanelId = useId();
 	const expandAfterRef = useRef(null);
 
 	/* ---------- Typography helpers ---------- */
@@ -922,12 +943,12 @@ export default function StylesTab() {
 	const updateFont = (index, updatedFont) => {
 		const next = [...fonts];
 		next[index] = updatedFont;
-		dispatch({ type: 'SET_FONTS', payload: next });
+		dispatch({ type: 'SET_FONTS', payload: next, change: { type: 'update', index, previousItem: fonts[index], item: updatedFont } });
 	};
 
 	const removeFont = (index) => {
 		const next = fonts.filter((_, i) => i !== index);
-		dispatch({ type: 'SET_FONTS', payload: next });
+		dispatch({ type: 'SET_FONTS', payload: next, change: { type: 'remove', index, item: fonts[index] } });
 		setExpandedKey(null);
 	};
 
@@ -947,6 +968,7 @@ export default function StylesTab() {
 			name: (source.name || source.slug) + ' (copy)',
 			default: false,
 		};
+		delete copy._slugReference;
 		const next = [...fonts];
 		next.splice(index + 1, 0, copy);
 		dispatch({ type: 'SET_FONTS', payload: next });
@@ -1409,13 +1431,14 @@ export default function StylesTab() {
 								>
 									{item.name}
 								</span>
-								<code
+								<button
+									type="button"
 									className={`ts-font-showcase__declaration${copiedIdx === idx ? ' ts-font-showcase__declaration--copied' : ''}`}
 									onClick={() => handleCopyDeclaration(item.declaration, idx)}
 									title="Click to copy"
 								>
-									{copiedIdx === idx ? 'Copied!' : item.declaration}
-								</code>
+									<code>{copiedIdx === idx ? 'Copied!' : item.declaration}</code>
+								</button>
 								<span className="ts-font-showcase__source">
 									{item.source}
 								</span>
@@ -1497,20 +1520,24 @@ export default function StylesTab() {
 
 			{newCardOpen && (
 				<div className="ts-font-editor ts-font-editor--expanded">
-					<div
-						className="ts-font-editor__header"
+					<button
+						type="button"
+						className="ts-font-editor__trigger"
 						onClick={() => setNewCardOpen(false)}
+						aria-expanded="true"
+						aria-controls={newCardPanelId}
+						aria-label="Close new style"
 					>
-						<div className="ts-font-editor__summary">
+						<span className="ts-font-editor__summary">
 							<strong className="ts-font-editor__name">
 								New style
 							</strong>
-						</div>
-						<span className="ts-font-editor__toggle">
+						</span>
+						<span className="ts-font-editor__toggle" aria-hidden="true">
 							&#10005;
 						</span>
-					</div>
-					<div className="ts-font-editor__body">
+					</button>
+					<div className="ts-font-editor__body" id={newCardPanelId}>
 						<SelectControl
 							__next40pxDefaultSize
 							label="Target"

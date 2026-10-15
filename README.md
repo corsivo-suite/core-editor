@@ -22,6 +22,10 @@ Dare al tema attivo un design system editabile dall'admin senza toccare i file d
 
 **Rinomina dei template** — il POST `config` accetta `template_renames`, una mappa dal vecchio slug al nuovo, separata dalla configurazione persistita. La mappa deve riferirsi a template esistenti prima del salvataggio e presenti nella nuova configurazione, con destinazioni univoche; sono ammessi scambi di slug. Dopo la scrittura verificata, sotto lo stesso lock, vengono migrate le assegnazioni `_corsivo_theme_style_template`; le assegnazioni ai template effettivamente eliminati vengono rimosse. I client che rinominano uno slug devono inviare questa mappa per conservare le assegnazioni ai contenuti.
 
+**Riferimenti a font e colori** — il configuratore aggiorna i riferimenti strutturati in stili globali, template ed ereditarietà dei componenti quando uno slug viene rinominato; la rimozione di un preset svuota i relativi riferimenti. Le bozze temporaneamente vuote o duplicate mantengono l'origine fino alla risoluzione dello slug. Classi, variabili e slug scritti nei contenuti WordPress o nel CSS personalizzato richiedono un aggiornamento esplicito: non vengono riscritti e non vengono creati alias persistenti.
+
+**Tipografia responsive e visibilità** — gli override `max-width` si applicano in ordine decrescente anche agli stili predefiniti, ai titoli e ai font globali o dei template, nel frontend e nell'editor. L'anteprima compone la stessa cascata. `hideInEditor` nasconde una variazione dal selettore Gutenberg mantenendo la registrazione server, il CSS e la variazione `theme.json` necessari ai contenuti esistenti.
+
 ## Punti rilevanti
 
 - Storage del registro con schema verificato fisicamente (engine, colonne, indici confrontati con l'atteso) e attestato nelle opzioni; installazione fresh-only serializzata con lock MySQL. Una tabella completa e fisicamente esatta viene riattestata anche se contiene già dati, senza riscriverli; su schema incoerente il plugin è fail-closed, il log rifiuta le scritture e l'admin mostra l'errore.
@@ -50,7 +54,7 @@ wp eval-file wp-content/plugins/corsivo-theme-editor/tests/runtime-regressions.p
 wp eval-file wp-content/plugins/corsivo-theme-editor/tests/configurator-output-smoke.php
 ```
 
-I comandi npm vanno eseguiti dalla root del plugin con le dipendenze del configuratore installate. `check` esegue lint, test React, `test:php` e build; `package` crea lo ZIP distribuibile, inclusi `assets/` e `templates/`. `test:php` richiede PHP nel PATH e copre storage, sicurezza, rinomine e validazione backend, minificazione, asset e navigazione amministrativa.
+I comandi npm vanno eseguiti dalla root del plugin con le dipendenze del configuratore installate. `check` esegue lint, test React, `test:php` e build; `package` crea lo ZIP distribuibile, inclusi `assets/` e `templates/`. `test:php` richiede PHP nel PATH e copre storage, sicurezza, rinomine e validazione backend, stili nascosti, tipografia responsive, parsing CSS, redirect dei feed, minificazione, asset e navigazione amministrativa.
 
 Il runtime smoke (WP-CLI, plugin attivo) verifica schema e prontezza del registro, sanitizer della config, guardie CSS e slug duplicati, rifiuto dei formati non correnti, lock e conflitti di revisione, backup e verifica post-scrittura, scope dei font e merge dei `fontFace` in theme.json. Le regressioni runtime verificano anche proxy archivio, Query Loop ereditato, paginazione, footer e lock del writer; lo smoke output controlla il CSS generato. Lo static check pretende l'assenza di installer lazy e il contratto dello storage current-only.
 
@@ -109,6 +113,8 @@ I sorgenti del configuratore e gli artefatti `configurator/build/` sono entrambi
 | `configurator/src/configAdapter.test.js` | Test save/load, ordine e rimozione dello stato UI transient. |
 | `configurator/src/api.js` | Client delle route REST del configuratore e gestione errori/conflitti. |
 | `configurator/src/store.js` | Stato condiviso, caricamento, modifiche e salvataggio della configurazione. |
+| `configurator/src/fontPreviewStyles.js` | Composizione della cascata tipografica responsive usata dall'anteprima. |
+| `configurator/src/fontPreviewStyles.test.js` | Regressioni sull'ereditarietà dei breakpoint e sull'ordine delle soglie uguali. |
 | `configurator/src/lib/fontFeatures.js` | Catalogo e normalizzazione delle feature OpenType. |
 | `configurator/src/components/App.jsx` | Shell, navigazione e orchestrazione delle sezioni del configuratore. |
 | `configurator/src/components/Breakpoints/BreakpointsTab.jsx` | Editing dei breakpoint del design system. |
@@ -134,6 +140,7 @@ I sorgenti del configuratore e gli artefatti `configurator/build/` sono entrambi
 | `tests/storage-static.php` | Guardie statiche sul contratto current-only dello storage. |
 | `tests/security-regressions.php` | Regressioni isolate su CSS, pagine funzionali e minificazione. |
 | `tests/backend-regressions.php` | Regressioni isolate su validazione, rinomine dei template, metadati e rewrite. |
+| `tests/runtime-style-regressions.php` | Regressioni isolate su variazioni nascoste, tipografia responsive, shorthand CSS e feed degli archivi. |
 | `tests/minify-regressions.php` | Regressioni su cache, ordine, dipendenze e selezione degli asset minificabili. |
 | `tests/runtime-regressions.php` | Fixture WordPress per archivi, Query Loop, paginazione, footer e lock del writer. |
 | `tests/admin-navigation.php` | Verifiche statiche della navigazione amministrativa. |

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from '@wordpress/element';
+import { useState, useEffect, useMemo, useId, useRef } from '@wordpress/element';
 import {
 	Button,
 	TextControl,
@@ -112,6 +112,7 @@ function WeightField({ weight, onRename }) {
 function FontUploadButton({ onUploaded }) {
 	const [uploading, setUploading] = useState(false);
 	const [error, setError] = useState(null);
+	const fileInput = useRef(null);
 
 	const handleUpload = async (e) => {
 		const file = e.target.files?.[0];
@@ -131,16 +132,24 @@ function FontUploadButton({ onUploaded }) {
 
 	return (
 		<div className="ts-font-upload">
-			<label className="button button-secondary button-small ts-font-upload__btn">
+			<button
+				type="button"
+				className="button button-secondary button-small ts-font-upload__btn"
+				onClick={() => fileInput.current?.click()}
+				disabled={uploading}
+				aria-busy={uploading}
+				aria-label="Upload font"
+			>
 				{uploading ? <Spinner /> : 'Upload'}
-				<input
-					type="file"
-					accept=".woff,.woff2,.ttf,.otf"
-					onChange={handleUpload}
-					style={{ display: 'none' }}
-					disabled={uploading}
-				/>
-			</label>
+			</button>
+			<input
+				ref={fileInput}
+				type="file"
+				accept=".woff,.woff2,.ttf,.otf"
+				onChange={handleUpload}
+				hidden
+				disabled={uploading}
+			/>
 			{error && <span className="ts-font-upload__error">{error}</span>}
 		</div>
 	);
@@ -161,6 +170,7 @@ function InstalledFontEditor({
 	onWeightUrlChange,
 	fileFeatures,
 }) {
+	const panelId = useId();
 	// Convert object {weight: url} → array [{weight, url}] for stable rendering
 	const weightObj = font['font-weight'] || {};
 	const weightEntries = Object.entries(weightObj).map(([w, url]) => ({
@@ -243,154 +253,160 @@ function InstalledFontEditor({
 
 	return (
 		<div className={`ts-font-editor${expanded ? ' ts-font-editor--expanded' : ''}`}>
-			<div className="ts-font-editor__header" onClick={onToggle}>
-				<div className="ts-font-editor__summary">
-					<strong className="ts-font-editor__name">{name}</strong>
-					{font.format && (
-						<code className="ts-font-editor__family">{font.format}</code>
-					)}
-					{weightCount > 0 && (
-						<span className="ts-font-editor__badge">
-							{weightCount} weight{weightCount !== 1 ? 's' : ''}
-						</span>
-					)}
-				</div>
-				<div>
+			<div className="ts-font-editor__header">
+				<button
+					type="button"
+					className="ts-font-editor__trigger"
+					aria-expanded={expanded}
+					aria-controls={panelId}
+					onClick={onToggle}
+				>
+					<span className="ts-font-editor__summary">
+						<strong className="ts-font-editor__name">{name}</strong>
+						{font.format && (
+							<code className="ts-font-editor__family">{font.format}</code>
+						)}
+						{weightCount > 0 && (
+							<span className="ts-font-editor__badge">
+								{weightCount} weight{weightCount !== 1 ? 's' : ''}
+							</span>
+						)}
+					</span>
+					<span className="ts-font-editor__toggle" aria-hidden="true">
+						{expanded ? '\u25B2' : '\u25BC'}
+					</span>
+				</button>
+				<div className="ts-font-editor__header-actions">
 					<button
+						type="button"
 						className="ts-font-editor__delete"
-						onClick={(e) => {
-							e.stopPropagation();
-							onRemove();
-						}}
+						onClick={onRemove}
 						title="Remove"
+						aria-label={`Remove ${name}`}
 					>
 						&#10005;
 					</button>
-					<span className="ts-font-editor__toggle">
-						{expanded ? '\u25B2' : '\u25BC'}
-					</span>
 				</div>
 			</div>
 
-			{expanded && (
-				<div className="ts-font-editor__body">
-					<div className="ts-font-editor__row">
-						<TextControl
-							__next40pxDefaultSize
-							label="Font Family"
-							value={font['font-family'] || ''}
-							onChange={(v) => updateField('font-family', v)}
-							placeholder="Monospace"
-							__nextHasNoMarginBottom
-						/>
-						<SelectControl
-							__next40pxDefaultSize
-							label="Format"
-							value={font.format || 'woff2'}
-							options={[
-								{ label: 'woff2', value: 'woff2' },
-								{ label: 'woff', value: 'woff' },
-								{ label: 'truetype', value: 'truetype' },
-							]}
-							onChange={(v) => updateField('format', v)}
-							__nextHasNoMarginBottom
-						/>
-						<TextControl
-							__next40pxDefaultSize
-							label="Font Display"
-							value={font['font-display'] || ''}
-							onChange={(v) => updateField('font-display', v)}
-							placeholder="swap"
-							__nextHasNoMarginBottom
-						/>
-						<TextControl
-							__next40pxDefaultSize
-							label="Variable name"
-							value={font.varname || ''}
-							onChange={(v) => updateField('varname', sanitizeSlug(v, false))}
-							onBlur={() =>
-								updateField('varname', sanitizeSlug(font.varname || ''))
-							}
-							placeholder={font['font-family'] ? sanitizeSlug(font['font-family']) : ''}
-							__nextHasNoMarginBottom
-						/>
-					</div>
-					{font.varname && (
-						<code style={{ display: 'block', padding: '0.25rem 0', opacity: 0.7 }}>
-							--wp--preset--font-family--{font.varname}
-						</code>
-					)}
+			<div className="ts-font-editor__body" id={panelId} hidden={!expanded}>
+				<div className="ts-font-editor__row">
+					<TextControl
+						__next40pxDefaultSize
+						label="Font Family"
+						value={font['font-family'] || ''}
+						onChange={(v) => updateField('font-family', v)}
+						placeholder="Monospace"
+						__nextHasNoMarginBottom
+					/>
+					<SelectControl
+						__next40pxDefaultSize
+						label="Format"
+						value={font.format || 'woff2'}
+						options={[
+							{ label: 'woff2', value: 'woff2' },
+							{ label: 'woff', value: 'woff' },
+							{ label: 'truetype', value: 'truetype' },
+						]}
+						onChange={(v) => updateField('format', v)}
+						__nextHasNoMarginBottom
+					/>
+					<TextControl
+						__next40pxDefaultSize
+						label="Font Display"
+						value={font['font-display'] || ''}
+						onChange={(v) => updateField('font-display', v)}
+						placeholder="swap"
+						__nextHasNoMarginBottom
+					/>
+					<TextControl
+						__next40pxDefaultSize
+						label="Variable name"
+						value={font.varname || ''}
+						onChange={(v) => updateField('varname', sanitizeSlug(v, false))}
+						onBlur={() =>
+							updateField('varname', sanitizeSlug(font.varname || ''))
+						}
+						placeholder={font['font-family'] ? sanitizeSlug(font['font-family']) : ''}
+						__nextHasNoMarginBottom
+					/>
+				</div>
+				{font.varname && (
+					<code style={{ display: 'block', padding: '0.25rem 0', opacity: 0.7 }}>
+						--wp--preset--font-family--{font.varname}
+					</code>
+				)}
 
-					<h4 style={{ margin: '1rem 0 0.5rem' }}>Font Weights</h4>
-					{weightEntries.map((entry, index) => (
-						<div key={entry._uid} className="ts-installed-font__weight">
-							<WeightField
-								weight={entry.weight}
-								onRename={(newWeight) => renameWeight(index, newWeight)}
+				<h4 style={{ margin: '1rem 0 0.5rem' }}>Font Weights</h4>
+				{weightEntries.map((entry, index) => (
+					<div key={entry._uid} className="ts-installed-font__weight">
+						<WeightField
+							weight={entry.weight}
+							onRename={(newWeight) => renameWeight(index, newWeight)}
+						/>
+						<div className="ts-installed-font__file-select">
+							<ThemeFontSelect
+								value={entry.url}
+								onSelect={(newUrl) => onWeightUrlChange(entry._uid, newUrl)}
+								themeFiles={themeFiles}
 							/>
-							<div className="ts-installed-font__file-select">
-								<ThemeFontSelect
-									value={entry.url}
-									onSelect={(newUrl) => onWeightUrlChange(entry._uid, newUrl)}
-									themeFiles={themeFiles}
-								/>
-							</div>
-							<FontUploadButton
-								onUploaded={(uploadedUrl) => {
-									onWeightUrlChange(entry._uid, uploadedUrl);
-									onFileUploaded();
-								}}
-							/>
-							<Button
-								isDestructive
-								variant="tertiary"
-								isSmall
-								onClick={() => removeWeight(index)}
-							>
-								&times;
-							</Button>
 						</div>
-					))}
-					<Button variant="tertiary" isSmall onClick={addWeight}>
-						+ Add weight
-					</Button>
-
-					{availableFeatures.length > 0 && (
-						<div className="ts-font-editor__features">
-							<span className="ts-font-editor__label">
-								OpenType features (always on)
-							</span>
-							<div className="ts-font-editor__features-list">
-								{availableFeatures.map((f) => (
-									<CheckboxControl
-										key={f.tag}
-										label={
-											f.name
-												? f.tag + ' — ' + f.name
-												: f.tag
-										}
-										checked={activeFeatures.includes(f.tag)}
-										onChange={(v) =>
-											toggleFeature(f.tag, v)
-										}
-										__nextHasNoMarginBottom
-									/>
-								))}
-							</div>
-						</div>
-					)}
-
-					<div className="ts-font-editor__actions">
+						<FontUploadButton
+							onUploaded={(uploadedUrl) => {
+								onWeightUrlChange(entry._uid, uploadedUrl);
+								onFileUploaded();
+							}}
+						/>
 						<Button
 							isDestructive
 							variant="tertiary"
-							onClick={onRemove}
+							isSmall
+							onClick={() => removeWeight(index)}
+							aria-label={`Remove weight ${entry.weight} from ${name}`}
 						>
-							Remove font
+							&times;
 						</Button>
 					</div>
+				))}
+				<Button variant="tertiary" isSmall onClick={addWeight}>
+					+ Add weight
+				</Button>
+
+				{availableFeatures.length > 0 && (
+					<div className="ts-font-editor__features">
+						<span className="ts-font-editor__label">
+							OpenType features (always on)
+						</span>
+						<div className="ts-font-editor__features-list">
+							{availableFeatures.map((f) => (
+								<CheckboxControl
+									key={f.tag}
+									label={
+										f.name
+											? f.tag + ' — ' + f.name
+											: f.tag
+									}
+									checked={activeFeatures.includes(f.tag)}
+									onChange={(v) =>
+										toggleFeature(f.tag, v)
+									}
+									__nextHasNoMarginBottom
+								/>
+							))}
+						</div>
+					</div>
+				)}
+
+				<div className="ts-font-editor__actions">
+					<Button
+						isDestructive
+						variant="tertiary"
+						onClick={onRemove}
+					>
+						Remove font
+					</Button>
 				</div>
-			)}
+			</div>
 		</div>
 	);
 }

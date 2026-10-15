@@ -1,4 +1,4 @@
-import { useState } from '@wordpress/element';
+import { useState, useId } from '@wordpress/element';
 import { SelectControl, TextControl } from '@wordpress/components';
 import { useConfig } from '../../store';
 import {
@@ -155,6 +155,7 @@ function TemplateFields({ data, fonts, colors, onChange, isGlobal = false }) {
 /* ── Main component ── */
 
 export default function TemplatesTab() {
+	const globalPanelId = useId();
 	const { state, dispatch } = useConfig();
 	const globalStyles = state.globalStyles || {};
 	const styleTemplates = state.styleTemplates || [];
@@ -222,33 +223,34 @@ export default function TemplatesTab() {
 
 				{/* ── Global (fixed, non-deletable, yellow) ── */}
 				<div className={`ts-style-template ts-style-template--global${expanded.has('global') ? ' ts-style-template--expanded' : ''}`}>
-					<div
+					<button
+						type="button"
 						className="ts-style-template__header"
+						aria-expanded={expanded.has('global')}
+						aria-controls={globalPanelId}
 						onClick={() => toggleExpand('global')}
 					>
-						<div className="ts-style-template__summary">
+						<span className="ts-style-template__summary">
 							<span className="ts-style-template__name">Global</span>
 							<span className="ts-style-template__badge">theme.json</span>
-						</div>
-						<span className="ts-style-template__toggle">
+						</span>
+						<span className="ts-style-template__toggle" aria-hidden="true">
 							{expanded.has('global') ? '▲' : '▼'}
 						</span>
+					</button>
+					<div className="ts-style-template__body" id={globalPanelId} hidden={!expanded.has('global')}>
+						<p className="description">
+							Default styles applied globally via <code>theme.json</code>.
+							Affects both frontend and Gutenberg editor.
+						</p>
+						<TemplateFields
+							data={globalStyles}
+							fonts={fonts}
+							colors={colors}
+							onChange={(updated) => dispatch({ type: 'SET_GLOBAL_STYLES', payload: updated })}
+							isGlobal
+						/>
 					</div>
-					{expanded.has('global') && (
-						<div className="ts-style-template__body">
-							<p className="description">
-								Default styles applied globally via <code>theme.json</code>.
-								Affects both frontend and Gutenberg editor.
-							</p>
-							<TemplateFields
-								data={globalStyles}
-								fonts={fonts}
-								colors={colors}
-								onChange={(updated) => dispatch({ type: 'SET_GLOBAL_STYLES', payload: updated })}
-								isGlobal
-							/>
-						</div>
-					)}
 				</div>
 
 				<StyleTemplateCollection

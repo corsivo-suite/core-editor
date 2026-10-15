@@ -357,7 +357,7 @@ function corsivo_theme_handle_missing_cpt_posts() {
         }
     }
 
-    if (isset($wp_query->is_archive) && $wp_query->is_archive
+    if (!is_feed() && isset($wp_query->is_archive) && $wp_query->is_archive
         && isset($wp_query->query) && isset($wp_query->query['post_type']) && $wp_query->query['post_type']) {
 
         $post_type = corsivo_theme_normalize_post_type_query_var($wp_query->query['post_type']);

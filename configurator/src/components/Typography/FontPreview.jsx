@@ -1,64 +1,24 @@
 import { useState, useMemo } from '@wordpress/element';
 import { Button } from '@wordpress/components';
 import { useConfig } from '../../store';
+import { getFontPreviewStyles } from '../../fontPreviewStyles';
 
-function parseCssProperties(cssText) {
-	const props = {};
-	if (!cssText) return props;
-	const declarations = cssText.split(';');
-	for (const decl of declarations) {
-		const colonIdx = decl.indexOf(':');
-		if (colonIdx === -1) continue;
-		const prop = decl.substring(0, colonIdx).trim();
-		const value = decl.substring(colonIdx + 1).trim();
-		if (prop && value) {
-			props[prop] = value;
-		}
-	}
-	return props;
-}
+const DEFAULT_BREAKPOINTS = {};
 
 export default function FontPreview({ font }) {
 	const { state } = useConfig();
-	const breakpointValues = state.breakpoints || {};
+	const breakpointValues = state.breakpoints || DEFAULT_BREAKPOINTS;
 	const [activeBreakpoint, setActiveBreakpoint] = useState('desktop');
 
-	const effectiveStyles = useMemo(() => {
-		const baseProps = parseCssProperties(font.css);
-		const base = {
-			fontFamily: baseProps['font-family'] || 'inherit',
-			fontSize: baseProps['font-size'] || '1rem',
-			lineHeight: baseProps['line-height'] || '1.5',
-			letterSpacing: baseProps['letter-spacing'] || 'normal',
-			fontWeight: baseProps['font-weight'] || 'normal',
-		};
-
-		if (
-			activeBreakpoint !== 'desktop' &&
-			font.breakpoints?.[activeBreakpoint]
-		) {
-			const bp = font.breakpoints[activeBreakpoint];
-			const bpProps = parseCssProperties(bp.css);
-			return {
-				fontFamily: bpProps['font-family'] || base.fontFamily,
-				fontSize: bpProps['font-size'] || base.fontSize,
-				lineHeight: bpProps['line-height'] || base.lineHeight,
-				letterSpacing:
-					bpProps['letter-spacing'] || base.letterSpacing,
-				fontWeight: bpProps['font-weight'] || base.fontWeight,
-			};
-		}
-		return base;
-	}, [font, activeBreakpoint]);
+	const effectiveStyles = useMemo(
+		() => getFontPreviewStyles( font, breakpointValues, activeBreakpoint ),
+		[ font, breakpointValues, activeBreakpoint ]
+	);
 
 	const maxWidth =
 		activeBreakpoint !== 'desktop' && breakpointValues[activeBreakpoint]
 			? `${breakpointValues[activeBreakpoint]}px`
 			: '100%';
-
-	const fontBreakpoints = font.breakpoints
-		? Object.keys(font.breakpoints)
-		: [];
 
 	return (
 		<div className="ts-font-preview">
@@ -75,7 +35,6 @@ export default function FontPreview({ font }) {
 					Desktop
 				</Button>
 				{Object.entries(breakpointValues)
-					.filter(([name]) => fontBreakpoints.includes(name))
 					.sort((a, b) => b[1] - a[1])
 					.map(([name, px]) => (
 						<Button

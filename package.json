@@ -22,6 +22,6 @@
     "lint": "npm --prefix configurator run lint",
     "package": "node configurator/node_modules/@wordpress/scripts/bin/wp-scripts.js plugin-zip",
     "test": "npm --prefix configurator test -- --runInBand",
-    "test:php": "php tests/storage-static.php && php tests/security-regressions.php && php tests/backend-regressions.php && php tests/minify-regressions.php && php tests/configurator-assets.php && php tests/admin-navigation.php"
+    "test:php": "php tests/storage-static.php && php tests/security-regressions.php && php tests/backend-regressions.php && php tests/runtime-style-regressions.php && php tests/minify-regressions.php && php tests/configurator-assets.php && php tests/admin-navigation.php"
   }
 }

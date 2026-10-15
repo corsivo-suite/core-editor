@@ -8,6 +8,7 @@ import {
 import {
 	reconcilePageAssignments,
 	reconcileTemplateReferences,
+	reconcileStylePresetChange,
 	retainPageSlugReference,
 	retainTemplateSlugReference,
 } from './collectionAdapters';
@@ -44,9 +45,11 @@ const initialState = {
 export function configReducer(state, action) {
 	switch (action.type) {
 		case 'SET_FONTS':
-			return { ...state, fonts: action.payload, revision: state.revision + 1, isDirty: action.silent ? state.isDirty : true, saveStatus: action.silent ? state.saveStatus : null };
-		case 'SET_COLORS':
-			return { ...state, colors: action.payload, revision: state.revision + 1, isDirty: true, saveStatus: null };
+		case 'SET_COLORS': {
+			const collection = action.type === 'SET_FONTS' ? 'fonts' : 'colors';
+			const updates = reconcileStylePresetChange( state, collection, action.payload, action.change || { type: 'reconcile' } );
+			return { ...state, ...updates, revision: state.revision + 1, isDirty: action.silent ? state.isDirty : true, saveStatus: action.silent ? state.saveStatus : null };
+		}
 		case 'SET_BREAKPOINTS':
 			return { ...state, breakpoints: action.payload, revision: state.revision + 1, isDirty: true, saveStatus: null };
 		case 'SET_CUSTOM_FONTS':

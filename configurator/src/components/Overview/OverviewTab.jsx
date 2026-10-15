@@ -4,13 +4,14 @@ import { useConfig } from '../../store';
 /* ── Reusable copy-to-clipboard code ── */
 function CopyCode({ value, copyKey, isCopied, copy, modifier }) {
 	return (
-		<code
+		<button
+			type="button"
 			className={`ts-overview__copy${modifier ? ` ts-overview__copy--${modifier}` : ''}${isCopied(copyKey) ? ' ts-overview__copy--copied' : ''}`}
 			onClick={() => copy(value, copyKey)}
 			title="Click to copy"
 		>
-			{isCopied(copyKey) ? 'Copied!' : value}
-		</code>
+			<code>{isCopied(copyKey) ? 'Copied!' : value}</code>
+		</button>
 	);
 }
 

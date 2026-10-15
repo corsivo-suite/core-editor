@@ -43,7 +43,7 @@ export function normalizePageAssignments( value, currentLanguage ) {
 	);
 }
 
-const stripUid = ( { _uid, ...item } ) => item;
+const stripUid = ( { _uid, _slugReference, ...item } ) => item;
 
 const stripFunctionalPageState = ( { _autoSlug, _slugReference, fromFilter, ...page } ) => page;
 
@@ -106,7 +106,9 @@ export function createConfigSavePayload( state ) {
 	return {
 		revision: state.serverRevision,
 		fonts: state.fonts.map( stripUid ),
-		colors: state.colors,
+		colors: state.colors.some( ( color ) => color._slugReference !== undefined )
+			? state.colors.map( stripUid )
+			: state.colors,
 		breakpoints: state.breakpoints,
 		custom_fonts: state.customFonts,
 		install_fonts: state.installFonts.map( stripInstalledFontState ),

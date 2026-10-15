@@ -212,6 +212,58 @@ export function retainTemplateSlugReference( nextTemplates, change ) {
 	return stabilizeSlugReferences( nextTemplates, referenceOrigins, referenceChanges );
 }
 
+function reconcileStyleFields( style, paths, referenceChanges ) {
+	return paths.reduce( ( nextStyle, path ) => {
+		const [ section, field ] = path;
+		const value = field ? nextStyle[ section ]?.[ field ] : nextStyle[ section ];
+		if ( ! referenceChanges.has( value ) ) {
+			return nextStyle;
+		}
+		const replacement = referenceChanges.get( value );
+		return {
+			...nextStyle,
+			[ section ]: field
+				? { ...nextStyle[ section ], [ field ]: replacement }
+				: replacement,
+		};
+	}, style );
+}
+
+function reconcileInheritedFont( item, referenceChanges ) {
+	if ( ! item.inherits?.startsWith( 'font:' ) ) {
+		return item;
+	}
+	const slug = item.inherits.slice( 5 );
+	if ( ! referenceChanges.has( slug ) ) {
+		return item;
+	}
+	const replacement = referenceChanges.get( slug );
+	return { ...item, inherits: replacement ? `font:${ replacement }` : '' };
+}
+
+export function reconcileStylePresetChange( state, collection, items, change ) {
+	const { referenceChanges, referenceOrigins } = collectSlugReferenceChanges( items, change );
+	const presets = stabilizeSlugReferences( items, referenceOrigins, referenceChanges );
+	if ( ! referenceChanges.size ) {
+		return { [ collection ]: presets };
+	}
+	const paths = collection === 'fonts'
+		? [ [ 'body', 'font' ], [ 'heading', 'font' ], [ 'titleStyle' ], [ 'defaultParagraphStyle' ], [ 'defaultHeadingStyle' ] ]
+		: [ [ 'body', 'background' ], [ 'body', 'color' ], [ 'heading', 'color' ], [ 'link', 'color' ], [ 'link', 'hoverColor' ] ];
+	const globalStyles = reconcileStyleFields( state.globalStyles, paths, referenceChanges );
+	const styleTemplates = state.styleTemplates.map( ( template ) => reconcileStyleFields( template, paths, referenceChanges ) );
+	const updates = { [ collection ]: presets, globalStyles, styleTemplates };
+	if ( collection === 'fonts' ) {
+		const components = state.coreComponents;
+		updates.coreComponents = {
+			...components,
+			elements: Object.fromEntries( Object.entries( components.elements || {} ).map( ( [ name, item ] ) => [ name, reconcileInheritedFont( item, referenceChanges ) ] ) ),
+			blockStyles: ( components.blockStyles || [] ).map( ( item ) => reconcileInheritedFont( item, referenceChanges ) ),
+		};
+	}
+	return updates;
+}
+
 export function setDefaultStyleTemplate( templates, index, enabled ) {
 	return templates.map( ( template, templateIndex ) => {
 		let isDefault = Boolean( template.isDefault );

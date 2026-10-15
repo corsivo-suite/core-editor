@@ -1,3 +1,14 @@
+= Non rilasciato — 15/10/2026 =
+* includes/functions.php: gli stili nascosti nel selettore Gutenberg conservano registrazione server, theme.json e CSS frontend per i contenuti già pubblicati.
+* includes/functions.php: override tipografici responsive applicati anche agli stili predefiniti, globali e dei template, nell'editor e nel frontend.
+* configurator/src/fontPreviewStyles.js e components/Typography/FontPreview.jsx: anteprima responsive con cascata coerente fra desktop, tablet e mobile.
+* configurator/src/store.js: riconciliati i riferimenti interni durante rinomina ed eliminazione di font e colori, con gestione delle bozze degli slug e delle collisioni. Le rinomine aggiornano la configurazione; riferimenti nei contenuti e nel CSS manuale richiedono un aggiornamento esplicito.
+* includes/functions.php: parsing degli shorthand padding e margin con funzioni CSS e sintassi da uno a quattro valori, preservando le espressioni nell'export theme.json.
+* includes/actions.php: esclusi i feed degli archivi CPT dal redirect alla pagina archivio personalizzata.
+* configurator/src/components/ e configurator/src/index.scss: accordion azionabili da tastiera con pulsanti, aria-expanded, focus visibile ed etichette dei controlli; riabilitate le regole di accessibilità del lint.
+* tests/runtime-style-regressions.php, configurator/src/fontPreviewStyles.test.js e configurator/src/store.test.js: regressioni per generazione CSS, breakpoint, shorthand, feed, anteprime e riferimenti della configurazione; runner PHP aggiornato.
+* Versione invariata. Nessuna modifica alla CI.
+
 = Non rilasciato — 11/10/2026 =
 * includes/rest-api-configurator.php e includes/admin/settings.php: rinomina dei template con migrazione delle assegnazioni sotto lock della configurazione, gestione di scambi, eliminazioni e collisioni; custom properties CSS con case preservato e payload malformati respinti con 400.
 * includes/rest-api-configurator.php e includes/admin/settings.php: preservati i range dei pesi dei variable font; revisione e audit derivati dal salvataggio verificato sotto lock, senza riletture esposte a scritture concorrenti.
