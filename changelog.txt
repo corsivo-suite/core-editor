@@ -1,3 +1,9 @@
+= 2.1.2 — 18/10/2026 =
+* configurator/src/components/Colors/ColorsTab.jsx: rimossa la nota sulla rinomina dello slug dalle sole card colore; sostituito il pulsante testuale Remove color con il cestino in alto a destra, usando Button WordPress con etichetta accessibile e tooltip.
+* configurator/src/admin-ui.scss: card colore compatte con spaziatura interna di 8 px, preservando le dimensioni dei campi Name e Slug.
+* Aggiornati versione e asset del configuratore.
+* Superati lint mirati, build, 30 test React e 22 verifiche degli asset. Nel browser card alta 161 px rispetto ai precedenti 347 px, senza overflow a 390 px; verificati picker, riordino da tastiera, rimozione accessibile e salvataggio.
+
 = 2.1.1 — 18/10/2026 =
 * includes/admin/settings.php: elaborato il POST nel caricamento della pagina, prima della localizzazione React; dopo il salvataggio un redirect 303 ricarica configurazione e revisione aggiornate, evitando falsi conflitti ai salvataggi consecutivi.
 * includes/admin/settings.php e script.js: conservata la sottosezione tramite campo settings_section validato; notifiche di successo sul GET e segnalazioni di errore prima del rendering, mantenendo il controllo dei conflitti reali.

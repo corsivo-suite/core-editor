@@ -4,6 +4,7 @@
 	gap: 1rem;
 
 	> .corsivo-admin-ui-sortable-collection__item {
+		position: relative;
 		align-items: flex-start;
 		padding: 0.75rem;
 		border: 1px solid #c3c4c7;
@@ -19,7 +20,7 @@
 
 .ts-color-swatch {
 	align-items: stretch;
-	gap: 0.75rem;
+	gap: var(--corsivo-admin-ui-space-2);
 	padding: 0;
 	border: 0;
 	border-radius: 0;
@@ -27,10 +28,24 @@
 	cursor: default;
 	transition: none;
 
+	&__color {
+		padding-inline-end: var(--corsivo-admin-ui-control-height);
+	}
+
 	&__fields {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-		gap: 0.75rem;
+		gap: var(--corsivo-admin-ui-space-2);
+	}
+
+	&__remove.components-button {
+		position: absolute;
+		top: var(--corsivo-admin-ui-space-2);
+		inset-inline-end: var(--corsivo-admin-ui-space-2);
+		min-width: 32px;
+		width: 32px;
+		height: 32px;
+		padding: 0;
 	}
 }
 

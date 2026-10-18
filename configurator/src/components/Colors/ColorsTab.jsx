@@ -2,6 +2,7 @@ import { Button, TextControl } from '@wordpress/components';
 import { ColorControl, SortableCollection } from '@corsivo-suite/wp-admin-ui';
 import { rectSortingStrategy } from '@dnd-kit/sortable';
 import { __ } from '@wordpress/i18n';
+import { trash } from '@wordpress/icons';
 import { useConfig } from '../../store';
 import {
 	colorControlTranslations,
@@ -18,6 +19,7 @@ function ColorCard( { color, palette, onChange, onRemove } ) {
 		<div className="ts-color-swatch">
 			<ColorControl
 				{ ...colorControlTranslations }
+				className="ts-color-swatch__color"
 				label={ __( 'Color', 'corsivo-core-editor' ) }
 				value={ color.color || '' }
 				onChange={ ( nextColor ) =>
@@ -40,7 +42,6 @@ function ColorCard( { color, palette, onChange, onRemove } ) {
 					__next40pxDefaultSize
 					__nextHasNoMarginBottom
 					label="Slug"
-					help="Updates configuration references. Existing content and custom CSS keep the previous slug."
 					value={ color.slug || '' }
 					onChange={ ( slug ) =>
 						onChange( {
@@ -56,9 +57,15 @@ function ColorCard( { color, palette, onChange, onRemove } ) {
 					}
 				/>
 			</div>
-			<Button isDestructive variant="tertiary" onClick={ onRemove }>
-				Remove color
-			</Button>
+			<Button
+				className="ts-color-swatch__remove"
+				icon={ trash }
+				label={ __( 'Remove color', 'corsivo-core-editor' ) }
+				showTooltip
+				isDestructive
+				variant="tertiary"
+				onClick={ onRemove }
+			/>
 		</div>
 	);
 }
