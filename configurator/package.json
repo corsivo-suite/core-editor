@@ -1,8 +1,8 @@
 {
-  "name": "corsivo-theme-configurator",
-  "version": "1.4.0",
+  "name": "corsivo-core-configurator",
+  "version": "2.0.0",
   "private": true,
-  "description": "Corsivo Theme admin configurator",
+  "description": "Corsivo Core Editor admin configurator",
   "license": "GPL-2.0-or-later",
   "main": "build/index.js",
   "scripts": {
@@ -24,7 +24,7 @@
     "@wordpress/api-fetch": "^7.50.0",
     "@wordpress/components": "^32.4.0",
     "@wordpress/element": "^8.2.0",
-	"@wordpress/icons": "12.2.0",
+    "@wordpress/icons": "12.2.0",
     "@wordpress/i18n": "^6.23.0",
     "opentype.js": "^2.0.0",
     "wawoff2": "^2.0.1"

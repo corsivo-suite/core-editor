@@ -1,0 +1,61 @@
+.corsivo-toolkit-page h2 {
+	margin-top: 2rem;
+}
+
+.corsivo-toolkit-table th:first-child,
+.corsivo-toolkit-table td:first-child {
+	width: 90px;
+}
+
+.corsivo-toolkit-table code {
+	display: block;
+	width: fit-content;
+	margin-top: 0.35rem;
+}
+
+.corsivo-toolkit-toggle-cell {
+	vertical-align: middle;
+}
+
+.corsivo-toolkit-toggle {
+	display: inline-block;
+	position: relative;
+	width: 46px;
+	height: 24px;
+}
+
+.corsivo-toolkit-toggle input {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.corsivo-toolkit-toggle span {
+	position: absolute;
+	inset: 0;
+	cursor: pointer;
+	background: #c3c4c7;
+	border-radius: 999px;
+	transition: background 0.16s ease;
+}
+
+.corsivo-toolkit-toggle span::before {
+	content: "";
+	position: absolute;
+	top: 3px;
+	left: 3px;
+	width: 18px;
+	height: 18px;
+	background: #fff;
+	border-radius: 50%;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+	transition: transform 0.16s ease;
+}
+
+.corsivo-toolkit-toggle input:checked + span {
+	background: #1d2327;
+}
+
+.corsivo-toolkit-toggle input:checked + span::before {
+	transform: translateX(22px);
+}

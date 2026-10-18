@@ -18,7 +18,7 @@ function ColorCard( { color, palette, onChange, onRemove } ) {
 		<div className="ts-color-swatch">
 			<ColorControl
 				{ ...colorControlTranslations }
-				label={ __( 'Color', 'corsivo-theme-editor' ) }
+				label={ __( 'Color', 'corsivo-core-editor' ) }
 				value={ color.color || '' }
 				onChange={ ( nextColor ) =>
 					onChange( { ...color, color: nextColor } )
@@ -93,11 +93,11 @@ export default function ColorsTab() {
 				getItemLabel={ ( color ) =>
 					color.name ||
 					color.slug ||
-					__( 'Color', 'corsivo-theme-editor' )
+					__( 'Color', 'corsivo-core-editor' )
 				}
 				ariaLabel={ __(
 					'Theme color palette',
-					'corsivo-theme-editor'
+					'corsivo-core-editor'
 				) }
 				className="ts-colors-grid"
 				strategy={ rectSortingStrategy }

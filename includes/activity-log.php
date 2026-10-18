@@ -217,14 +217,14 @@ function corsivo_theme_activity_log_deleted_user($user_id) {
 add_action('deleted_user', 'corsivo_theme_activity_log_deleted_user');
 
 function corsivo_theme_activity_log_redirect($args = array()) {
-	$url = add_query_arg($args, admin_url('options-general.php?page=corsivo-theme-editor'));
+	$url = add_query_arg($args, admin_url('options-general.php?page=corsivo-core-editor'));
 	wp_safe_redirect($url . '#history');
 	exit;
 }
 
 function corsivo_theme_save_activity_log_settings() {
 	if (!current_user_can('manage_options')) {
-		wp_die(esc_html__('You are not allowed to manage these settings.', 'corsivo-theme-editor'), 403);
+		wp_die(esc_html__('You are not allowed to manage these settings.', 'corsivo-core-editor'), 403);
 	}
 
 	check_admin_referer('corsivo_theme_activity_log_settings');
@@ -248,7 +248,7 @@ add_action('admin_post_corsivo_theme_save_activity_log_settings', 'corsivo_theme
 
 function corsivo_theme_clear_activity_log() {
 	if (!current_user_can('manage_options')) {
-		wp_die(esc_html__('You are not allowed to clear the activity log.', 'corsivo-theme-editor'), 403);
+		wp_die(esc_html__('You are not allowed to clear the activity log.', 'corsivo-core-editor'), 403);
 	}
 
 	check_admin_referer('corsivo_theme_clear_activity_log');
@@ -273,7 +273,7 @@ function corsivo_theme_activity_log_render() {
 		return;
 	}
 	if (!corsivo_theme_activity_log_schema_is_ready()) {
-		echo '<div class="notice notice-error"><p>' . esc_html__('Activity storage is not available.', 'corsivo-theme-editor') . '</p></div>';
+		echo '<div class="notice notice-error"><p>' . esc_html__('Activity storage is not available.', 'corsivo-core-editor') . '</p></div>';
 		return;
 	}
 
@@ -314,7 +314,7 @@ function corsivo_theme_activity_log_render() {
 	<div class="wrap corsivo-theme-component">
 		<h2>Activity</h2>
 		<form method="get" class="corsivo-theme-log-filters">
-			<input type="hidden" name="page" value="corsivo-theme-editor">
+			<input type="hidden" name="page" value="corsivo-core-editor">
 			<input type="hidden" name="section" value="history">
 			<label for="corsivo-theme-log-event">Action</label>
 			<select id="corsivo-theme-log-event" name="log_event">
@@ -363,7 +363,7 @@ function corsivo_theme_activity_log_render() {
 		<?php if ($total_pages > 1): ?>
 			<div class="tablenav"><div class="tablenav-pages">
 				<?= wp_kses_post(paginate_links(array(
-					'base' => add_query_arg(array('page' => 'corsivo-theme-editor', 'log_event' => $event, 'log_status' => $status, 'log_page' => '%#%'), admin_url('options-general.php')) . '#history',
+					'base' => add_query_arg(array('page' => 'corsivo-core-editor', 'log_event' => $event, 'log_status' => $status, 'log_page' => '%#%'), admin_url('options-general.php')) . '#history',
 					'format' => '',
 					'current' => $current_page,
 					'total' => $total_pages,

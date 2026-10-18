@@ -140,7 +140,7 @@ function corsivo_theme_search_configurator_pages($request) {
 		$title = get_the_title($post);
 		return array(
 			'id' => (int) $post->ID,
-			'title' => $title !== '' ? $title : __('(no title)', 'corsivo-theme-editor'),
+			'title' => $title !== '' ? $title : __('(no title)', 'corsivo-core-editor'),
 		);
 	}, $query->posts);
 

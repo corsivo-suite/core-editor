@@ -1,5 +1,5 @@
 /**
- * Corsivo Theme style template — Gutenberg sidebar panel.
+ * Corsivo Core Editor style template — Gutenberg sidebar panel.
  *
  * Adds a "Style Template" dropdown in the page/post editor sidebar
  * so the user can override the context-based template on a per-page basis.

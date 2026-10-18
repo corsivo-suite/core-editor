@@ -72,7 +72,7 @@ function FunctionalPageFields( {
 			) }
 			<EntitySelector
 				{ ...entitySelectorTranslations }
-				label={ __( 'Assigned page', 'corsivo-theme-editor' ) }
+				label={ __( 'Assigned page', 'corsivo-core-editor' ) }
 				value={ selectedPageIds }
 				onChange={ ( nextPageIds ) =>
 					onAssignmentChange(
@@ -87,15 +87,15 @@ function FunctionalPageFields( {
 				allowReorder={ false }
 				placeholder={ __(
 					'Search a WordPress page…',
-					'corsivo-theme-editor'
+					'corsivo-core-editor'
 				) }
 				selectedItemsLabel={ __(
 					'Assigned page',
-					'corsivo-theme-editor'
+					'corsivo-core-editor'
 				) }
 				noOptionsMessage={ __(
 					'No pages found.',
-					'corsivo-theme-editor'
+					'corsivo-core-editor'
 				) }
 			/>
 		</div>
@@ -192,13 +192,13 @@ export default function FunctionalPagesTab() {
 				getItemLabel={ ( page ) =>
 					page.label ||
 					page.slug ||
-					__( 'Functional page', 'corsivo-theme-editor' )
+					__( 'Functional page', 'corsivo-core-editor' )
 				}
 				renderItemHeader={ ( { item } ) => (
 					<>
 						{ item.label ||
 							item.slug ||
-							__( 'Functional page', 'corsivo-theme-editor' ) }
+							__( 'Functional page', 'corsivo-core-editor' ) }
 						{ item.fromFilter && (
 							<span className="ts-functional-pages__source">
 								PHP filter
@@ -221,12 +221,12 @@ export default function FunctionalPagesTab() {
 					/>
 				) }
 				canRemoveItem={ ( page ) => ! page.fromFilter }
-				addLabel={ __( 'Add functional page', 'corsivo-theme-editor' ) }
+				addLabel={ __( 'Add functional page', 'corsivo-core-editor' ) }
 				emptyState={ __(
 					'No functional pages configured.',
-					'corsivo-theme-editor'
+					'corsivo-core-editor'
 				) }
-				itemsLabel={ __( 'Functional pages', 'corsivo-theme-editor' ) }
+				itemsLabel={ __( 'Functional pages', 'corsivo-core-editor' ) }
 			/>
 		</div>
 	);

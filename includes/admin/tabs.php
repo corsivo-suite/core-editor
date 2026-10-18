@@ -25,7 +25,7 @@ function corsivo_theme_global_settings_render($settings) {
 							$download_url = admin_url('admin-ajax.php') . '?action=corsivo_theme_download_theme_json&nonce=' . wp_create_nonce('corsivo_theme_download_theme_json');
 							echo '<a class="button corsivo-theme-download-with-rebuild" href="' . esc_url($download_url) . '">Download theme.json</a>';
 						?>
-						<p class="description">Enriched theme.json with colors, fonts, fontFace and global styles injected by Corsivo Theme. Can be used as a standalone theme.json without the plugin.</p>
+						<p class="description">Enriched theme.json with colors, fonts, fontFace and global styles injected by Corsivo Core Editor. Can be used as a standalone theme.json without the plugin.</p>
 					</td>
 				</tr>
 			</tbody>

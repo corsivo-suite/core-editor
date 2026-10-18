@@ -1,0 +1,23 @@
+.post-type-product #postexcerpt,
+.post-type-product #woocommerce-product-data {
+	width: min(840px, 100%);
+	margin: 50px auto;
+}
+
+.post-type-product #woocommerce-product-data::before {
+	content: "Scheda prodotto";
+	position: relative;
+	display: inline-block;
+	margin: 20px 0;
+	font-size: 36px;
+	line-height: 40px;
+	font-weight: 700;
+}
+
+.post-type-product .product_data_tabs a {
+	background: #fff;
+}
+
+.post-type-product .product_data_tabs .active a {
+	background: #f1f1f1;
+}

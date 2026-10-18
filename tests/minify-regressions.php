@@ -8,7 +8,7 @@ set_error_handler(function ($severity, $message, $file, $line) {
 
 $wordpress_directory = dirname(__DIR__, 4);
 define('ABSPATH', $wordpress_directory . '/');
-define('CORSIVO_THEME_EDITOR_VERSION', 'minify-regressions');
+define('CORSIVO_CORE_EDITOR_VERSION', 'minify-regressions');
 define('HOUR_IN_SECONDS', 3600);
 
 function add_action(...$arguments) {}

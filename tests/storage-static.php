@@ -2,7 +2,7 @@
 
 $plugin_directory = dirname(__DIR__);
 $runtime_files = [
-	$plugin_directory . '/corsivo-theme-editor.php',
+	$plugin_directory . '/corsivo-core-editor.php',
 	$plugin_directory . '/includes/activity-storage.php',
 	$plugin_directory . '/includes/activity-log.php',
 	$plugin_directory . '/uninstall.php',
@@ -91,7 +91,7 @@ $required = [
 	'corsivo_theme_activity_schema_intent_fence_lost',
 	'corsivo_theme_activity_schema_finalize_fence_lost',
 	'corsivo_theme_verify_activity_storage',
-	'Update URI:        https://www.corsivo.dev/plugins/corsivo-theme-editor',
+	'Update URI:        https://www.corsivo.dev/plugins/corsivo-core-editor',
 ];
 
 foreach ($required as $needle) {
@@ -214,4 +214,4 @@ if ($failures) {
 	exit(1);
 }
 
-echo 'Corsivo Theme current-only storage static checks passed.' . PHP_EOL;
+echo 'Corsivo Core Editor current-only storage static checks passed.' . PHP_EOL;

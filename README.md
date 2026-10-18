@@ -1,10 +1,20 @@
-# Corsivo Theme
+# Corsivo Core Editor
 
-Configuratore runtime del design system per i temi WordPress: gestisce colori, tipografia, spaziature, style template per contesto e CSS dei blocchi core da un unico file JSON, con registro attività su tabella dedicata. Cartella `corsivo-theme-editor`, parte della suite Corsivo.
+Configuratore WordPress della suite Corsivo: riunisce design system del tema, funzionalità del core e tutti i moduli di Corsivo Toolkit. Cartella `corsivo-core-editor`, repository `corsivo-suite/core-editor`.
 
 ## Scopo
 
-Dare al tema attivo un design system editabile dall'admin senza toccare i file del tema: il plugin legge una configurazione JSON e la applica a runtime dentro `theme.json` e come CSS iniettato. Chi sviluppa il tema può fornire i default via filtri PHP; chi gestisce il sito li modifica dal configuratore React. Ogni operazione che tocca la configurazione finisce in un registro attività consultabile. Usato dai client demo della suite come "Theme Editor runtime".
+Gestire il design system del tema e il comportamento del sito da Impostazioni → Corsivo Core Editor. I token del tema vengono applicati a runtime dentro `theme.json` e come CSS iniettato; funzionalità WordPress e moduli opzionali sono configurati per sito, indipendentemente dal tema attivo. La struttura visuale esistente resta invariata, con due nuove sezioni dedicate.
+
+## Funzionalità WordPress e Toolkit
+
+**WordPress Features** controlla pingback/trackback, conservazione delle revisioni, intervalli Heartbeat distinti per editor e altre schermate amministrative, pattern remoti e supporto emoji. Nessun controllo modifica il comportamento nativo finché non viene configurato. La sezione mostra anche lo stato di WP-Cron e gli eventi registrati in sola lettura: non esegue, elimina o disattiva i lavori.
+
+**Toolkit** comprende tutti i moduli precedenti: Disable Comments, SVG Upload, Grid, WooCommerce Gutenberg e WooCommerce Notices. Solo i moduli abilitati vengono inclusi. La griglia conserva lo shortcode `corsivo_grid`, le funzioni pubbliche `corsivo_toolkit_render_grid()` / `corsivo_toolkit_get_grid()` e i relativi punti di estensione. SVG Upload conserva validazione, sanitizzazione e limiti del codice Toolkit locale.
+
+Le opzioni `corsivo_core_wordpress_features` e `corsivo_core_enabled_modules` appartengono al singolo sito e non vengono salvate in `corsivo-theme.json`. La selezione di Toolkit viene importata dall'opzione `corsivo_toolkit_enabled_snippets` soltanto quando la nuova opzione non esiste; una selezione vuota salvata viene rispettata. Il vecchio plugin può restare installato: quando Core Editor è attivo, ne vengono esclusi loader e pagina amministrativa per evitare doppie esecuzioni. Nessuna dipendenza runtime dal vecchio plugin.
+
+La rinomina riguarda nome, directory, file principale, repository, menu e distribuzione. I contratti specifici del tema (`corsivo_theme_*`, route REST, meta e `corsivo-theme.json`) restano validi. Il percorso multisite della configurazione del tema resta quello esistente sotto `uploads/corsivo-theme-editor/{stylesheet}/`; le cache degli asset ricostruibili usano la nuova identità.
 
 ## Come funziona
 
@@ -31,10 +41,10 @@ Dare al tema attivo un design system editabile dall'admin senza toccare i file d
 - Storage del registro con schema verificato fisicamente (engine, colonne, indici confrontati con l'atteso) e attestato nelle opzioni; installazione fresh-only serializzata con lock MySQL. Una tabella completa e fisicamente esatta viene riattestata anche se contiene già dati, senza riscriverli; su schema incoerente il plugin è fail-closed, il log rifiuta le scritture e l'admin mostra l'errore.
 - Config sanitizzata in profondità: le dichiarazioni CSS non possono contenere selettori (`{}`, `@import`, `expression(`, `javascript:` rifiutati), gli slug devono essere unici (`corsivo_theme_duplicate_slug`), i formati non correnti vengono respinti (`corsivo_theme_unsupported_config_format`) — il file è current-format-only.
 - Upload font validati sui magic byte (woff/woff2/otf/ttf), destinazione `wp_get_font_dir()` con fallback a `{tema}/fonts`; i MIME font sono ammessi solo per `manage_options`.
-- Minificazione opzionale CSS/JS in cache fingerprintata sotto `uploads/corsivo-theme-editor/cache/`, preservando ordine e dipendenze. Gli asset con inline, traduzioni, media o strategie incompatibili restano gestiti da WordPress. I bundle precedenti rimangono disponibili fra richieste e salvataggi della configurazione; il rebuild esplicito pulisce la cache generata. I sorgenti del tema non vengono mai modificati.
+- Minificazione opzionale CSS/JS in cache fingerprintata sotto `uploads/corsivo-core-editor/cache/`, preservando ordine e dipendenze. Gli asset con inline, traduzioni, media o strategie incompatibili restano gestiti da WordPress. I bundle precedenti rimangono disponibili fra richieste e salvataggi della configurazione; il rebuild esplicito pulisce la cache generata. I sorgenti del tema non vengono mai modificati.
 - Retention del log: cron giornaliero, 1–3650 giorni (default 90), 100–100000 voci (default 2000); gli utenti cancellati vengono anonimizzati. Log disattivabile da admin.
 - Multisite gestito per sito in attivazione, disattivazione e uninstall; l'uninstall rimuove tabella e opzioni del registro.
-- Il runtime PHP resta standalone; lo sviluppo del configuratore usa il package privato `@corsivo-suite/wp-admin-ui` alla versione esatta `0.1.0`. Requisiti WordPress 6.6+, PHP 8.1+. Versione 1.4.0.
+- Il runtime PHP resta standalone; lo sviluppo del configuratore usa il package privato `@corsivo-suite/wp-admin-ui` alla versione esatta `0.1.0`. Requisiti WordPress 6.6+, PHP 8.1+. Versione 2.0.0.
 
 ## Integrazioni con la suite
 
@@ -42,16 +52,16 @@ Dare al tema attivo un design system editabile dall'admin senza toccare i file d
 - **Helper per i temi** — `corsivo_theme_get_function_page('slug')` / `corsivo_theme_get_function_page_content()` per le functional pages, `corsivo_theme_render_footer()` per il footer Gutenberg in `footer.php`; REST pubblico read-only `corsivo-theme-data/pages` e `/page/{slug}` (solo pagine pubblicate non protette).
 - **WPML** — attiva di default quando presente (disattivabile da Integrations): functional pages, homepage e custom slug per lingua. **WooCommerce** — opt-in: aggiunge i contesti shop/cart/checkout/account e blocca l'override dello slug `product`.
 - **Punti di estensione** — `corsivo_theme_available_contexts`, `corsivo_theme_custom_slug_post_type_allowed`, `corsivo_theme_activity_logged`, `corsivo_theme_user_fonts`, `corsivo_theme_edit_font` / `_heading` / `_paragraph`, `corsivo_theme_settings_file_path`, `corsivo_theme_settings_lock_timeout`.
-- **Corsivo Updater** — canale privato dichiarato nell'header `Update URI: https://www.corsivo.dev/plugins/corsivo-theme-editor`.
+- **Corsivo Updater** — canale privato dichiarato nell'header `Update URI: https://www.corsivo.dev/plugins/corsivo-core-editor`.
 
 ## Test
 
 ```bash
 npm run check
 npm run package
-wp eval-file wp-content/plugins/corsivo-theme-editor/tests/runtime-smoke.php
-wp eval-file wp-content/plugins/corsivo-theme-editor/tests/runtime-regressions.php
-wp eval-file wp-content/plugins/corsivo-theme-editor/tests/configurator-output-smoke.php
+wp eval-file wp-content/plugins/corsivo-core-editor/tests/runtime-smoke.php
+wp eval-file wp-content/plugins/corsivo-core-editor/tests/runtime-regressions.php
+wp eval-file wp-content/plugins/corsivo-core-editor/tests/configurator-output-smoke.php
 ```
 
 I comandi npm vanno eseguiti dalla root del plugin con le dipendenze del configuratore installate. `check` esegue lint, test React, `test:php` e build; `package` crea lo ZIP distribuibile, inclusi `assets/` e `templates/`. `test:php` richiede PHP nel PATH e copre storage, sicurezza, rinomine e validazione backend, stili nascosti, tipografia responsive, parsing CSS, redirect dei feed, minificazione, asset e navigazione amministrativa.
@@ -60,12 +70,12 @@ Il runtime smoke (WP-CLI, plugin attivo) verifica schema e prontezza del registr
 
 ## Configurazione
 
-Impostazioni → Theme (`manage_options`). Sezioni: Settings, WordPress, Breakpoints, Spacing, Colors, Fonts, Styles, Templates, Overview, Integrations, History, più Functional Pages e Custom Slugs attivabili da Settings. Toggle globali: `core_renders` (helper PHP `render_core_*` per i template), `gutenberg_footer` (pagina privata come footer a blocchi, link in Aspetto → Footer), `cpt_menu_parent` (evidenzia la voce di menu dell'archivio sul singolo CPT), `force_style_injection`, `minify_css`, `minify_js`. Export da admin: `theme.json` arricchito (usabile anche senza il plugin) e `theme-json.scss` con mappe SCSS di colori, font, breakpoint e spacing. Configuratore React buildato con `@wordpress/scripts` (`cd configurator && npm install && npm run build`). Con un tema di terze parti conviene un child theme, così `corsivo-theme.json` sopravvive agli aggiornamenti del parent.
+Impostazioni → Corsivo Core Editor (`manage_options`). Sezioni: Settings, WordPress, WordPress Features, Toolkit, Breakpoints, Spacing, Colors, Fonts, Styles, Templates, Overview, Integrations, History, più Functional Pages e Custom Slugs attivabili da Settings. Toggle globali: `core_renders` (helper PHP `render_core_*` per i template), `gutenberg_footer` (pagina privata come footer a blocchi, link in Aspetto → Footer), `cpt_menu_parent` (evidenzia la voce di menu dell'archivio sul singolo CPT), `force_style_injection`, `minify_css`, `minify_js`. Export da admin: `theme.json` arricchito (usabile anche senza il plugin) e `theme-json.scss` con mappe SCSS di colori, font, breakpoint e spacing. Configuratore React buildato con `@wordpress/scripts` (`cd configurator && npm install && npm run build`). Con un tema di terze parti conviene un child theme, così `corsivo-theme.json` sopravvive agli aggiornamenti del parent.
 ## Bootstrap, entry point e lifecycle
 
-`corsivo-theme-editor.php` carica prima storage e journal dell'attività, poi amministrazione, integrazioni, funzioni di design system, REST pubblico e configuratore, stato delle pagine, impostazioni runtime e azioni WordPress. `includes/core-renders.php` è condizionale: viene incluso soltanto se la configurazione abilita gli helper di rendering del tema. Il configuratore React non è una seconda fonte dati: legge e scrive tramite REST lo stesso `corsivo-theme.json` consumato dalle funzioni PHP.
+`corsivo-core-editor.php` carica le funzionalità WordPress e Toolkit, quindi storage e journal dell'attività, amministrazione, integrazioni, funzioni di design system, REST pubblico e configuratore, stato delle pagine, impostazioni runtime e azioni WordPress. `includes/core-renders.php` è condizionale: viene incluso soltanto se la configurazione abilita gli helper di rendering del tema. Il configuratore React non è una seconda fonte dati: legge e scrive tramite REST lo stesso `corsivo-theme.json` consumato dalle funzioni PHP.
 
-Gli entry point sono la pagina Impostazioni → Theme, le route REST del configuratore e delle functional page, i filtri `theme.json`, gli enqueue frontend/editor, il pannello stile nel block editor, il footer Gutenberg opzionale e il cron di retention del registro. Non esistono scritture automatiche ai sorgenti del tema durante il normale rendering.
+Gli entry point sono la pagina Impostazioni → Corsivo Core Editor, i form amministrativi di funzionalità WordPress e Toolkit, i moduli opzionali, le route REST del configuratore e delle functional page, i filtri `theme.json`, gli enqueue frontend/editor, il pannello stile nel block editor, il footer Gutenberg opzionale e il cron di retention del registro. Non esistono scritture automatiche ai sorgenti del tema durante il normale rendering.
 
 All'attivazione, anche network-wide, viene creato e verificato lo storage fresh-only del registro e pianificata la pulizia. La disattivazione rimuove il cron senza eliminare configurazione, font o log. `uninstall.php` attraversa i siti interessati e rimuove soltanto tabella e opzioni possedute dal plugin. La cache minificata è derivata e rigenerabile; la fonte resta il file di configurazione corrente.
 
@@ -77,7 +87,7 @@ I sorgenti del configuratore e gli artefatti `configurator/build/` sono entrambi
 |---|---|
 | `.editorconfig` | Regole comuni di indentazione, encoding e fine riga. |
 | `.gitignore` | Esclusioni di dipendenze e artefatti locali. |
-| `corsivo-theme-editor.php` | Bootstrap, hook principali, lifecycle e caricamento condizionale dei moduli. |
+| `corsivo-core-editor.php` | Bootstrap, hook principali, lifecycle e caricamento condizionale dei moduli. |
 | `includes/activity-storage.php` | Blueprint, installazione fresh-only e verifica fisica del registro attività. |
 | `includes/activity-log.php` | Scrittura, redazione, query, retention e anonimizzazione del journal. |
 | `includes/admin/settings.php` | Pagina impostazioni PHP, lock/scrittura atomica, backup, restore ed enqueue del configuratore. |

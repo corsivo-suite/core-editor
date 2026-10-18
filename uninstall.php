@@ -21,6 +21,8 @@ function corsivo_theme_uninstall_activity_storage() {
 	delete_option('corsivo_theme_activity_log_enabled');
 	delete_option('corsivo_theme_activity_log_retention_days');
 	delete_option('corsivo_theme_activity_log_max_entries');
+	delete_option('corsivo_core_wordpress_features');
+	delete_option('corsivo_core_enabled_modules');
 }
 
 if (!is_multisite()) {

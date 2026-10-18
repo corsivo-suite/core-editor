@@ -276,7 +276,7 @@ add_action('admin_notices', 'corsivo_theme_corrupt_settings_notice');
 
 function corsivo_theme_restore_settings_backup() {
 	if (!current_user_can('manage_options')) {
-		wp_die(esc_html__('You are not allowed to restore Theme settings.', 'corsivo-theme-editor'), 403);
+		wp_die(esc_html__('You are not allowed to restore Theme settings.', 'corsivo-core-editor'), 403);
 	}
 
 	check_admin_referer('corsivo_theme_restore_settings_backup');
@@ -285,14 +285,14 @@ function corsivo_theme_restore_settings_backup() {
 	$backup_path = corsivo_theme_get_settings_backup_path();
 	$backup_settings = file_exists($backup_path) ? corsivo_theme_decode_settings_json(@file_get_contents($backup_path)) : null;
 	if (!is_array($backup_settings)) {
-		wp_safe_redirect(admin_url('options-general.php?page=corsivo-theme-editor&corsivo-theme-notice=restore-unavailable'));
+		wp_safe_redirect(admin_url('options-general.php?page=corsivo-core-editor&corsivo-theme-notice=restore-unavailable'));
 		exit;
 	}
 	$before_hash = file_exists($file_path) ? (hash_file('sha256', $file_path) ?: '') : '';
 
 	$corrupt_copy = $file_path . '.corrupt-' . gmdate('YmdHis');
 	if (file_exists($file_path) && !@rename($file_path, $corrupt_copy)) {
-		wp_safe_redirect(admin_url('options-general.php?page=corsivo-theme-editor&corsivo-theme-notice=restore-failed'));
+		wp_safe_redirect(admin_url('options-general.php?page=corsivo-core-editor&corsivo-theme-notice=restore-failed'));
 		exit;
 	}
 
@@ -300,7 +300,7 @@ function corsivo_theme_restore_settings_backup() {
 	if (is_wp_error($result)) {
 		if (file_exists($corrupt_copy)) corsivo_theme_replace_file($corrupt_copy, $file_path);
 		corsivo_theme_log_activity('settings_restore_failed', 'error', $result->get_error_message());
-		wp_safe_redirect(admin_url('options-general.php?page=corsivo-theme-editor&corsivo-theme-notice=restore-failed'));
+		wp_safe_redirect(admin_url('options-general.php?page=corsivo-core-editor&corsivo-theme-notice=restore-failed'));
 		exit;
 	}
 
@@ -313,7 +313,7 @@ function corsivo_theme_restore_settings_backup() {
 		array('preserved_corrupt_file' => basename($corrupt_copy)),
 		array('before_hash' => $before_hash, 'after_hash' => corsivo_theme_settings_revision($restored_settings))
 	);
-	wp_safe_redirect(admin_url('options-general.php?page=corsivo-theme-editor&corsivo-theme-notice=restore-success'));
+	wp_safe_redirect(admin_url('options-general.php?page=corsivo-core-editor&corsivo-theme-notice=restore-success'));
 	exit;
 }
 add_action('admin_post_corsivo_theme_restore_settings_backup', 'corsivo_theme_restore_settings_backup');
@@ -550,7 +550,7 @@ function corsivo_theme_save_settings($settings, $expected_revision = null) {
 
 // Add settings page to the menu
 function corsivo_theme_settings_menu() {
-    add_options_page('Theme', 'Theme', 'manage_options', 'corsivo-theme-editor', 'corsivo_theme_settings_page');
+    add_options_page('Corsivo Core Editor', 'Corsivo Core Editor', 'manage_options', 'corsivo-core-editor', 'corsivo_theme_settings_page');
 }
 add_action('admin_menu', 'corsivo_theme_settings_menu');
 
@@ -559,13 +559,13 @@ function corsivo_theme_hide_developer_settings_menu() {
 		return;
 	}
 
-	remove_submenu_page('options-general.php', 'corsivo-theme-editor');
+	remove_submenu_page('options-general.php', 'corsivo-core-editor');
 }
 add_action('admin_menu', 'corsivo_theme_hide_developer_settings_menu', 999);
 
 // Enqueue React configurator on the SH admin page
 function corsivo_theme_enqueue_admin($hook) {
-    if ($hook !== 'settings_page_corsivo-theme-editor') return;
+    if ($hook !== 'settings_page_corsivo-core-editor') return;
 
     wp_enqueue_style('corsivo_theme_admin_style', plugin_dir_url(__FILE__) . 'style.css', array(), filemtime(plugin_dir_path(__FILE__) . 'style.css'), 'all');
     wp_enqueue_script('corsivo_theme_admin_script', plugin_dir_url(__FILE__) . 'script.js', array(), filemtime(plugin_dir_path(__FILE__) . 'script.js'), true);
@@ -599,7 +599,7 @@ function corsivo_theme_enqueue_admin($hook) {
         $asset['version'],
         true
     );
-	wp_set_script_translations('corsivo-theme-configurator', 'corsivo-theme-editor');
+	wp_set_script_translations('corsivo-theme-configurator', 'corsivo-core-editor');
 
     wp_enqueue_style(
         'corsivo-theme-configurator',
@@ -624,7 +624,7 @@ function corsivo_theme_enqueue_admin($hook) {
 		);
 	}
 	if (empty($language_options)) {
-		$language_options[] = array('code' => 'default', 'label' => __('Default', 'corsivo-theme-editor'));
+		$language_options[] = array('code' => 'default', 'label' => __('Default', 'corsivo-core-editor'));
 	}
 	$language_codes = array_column($language_options, 'code');
 	if (!in_array($current_lang, $language_codes, true)) {
@@ -781,7 +781,7 @@ add_action('admin_enqueue_scripts', 'corsivo_theme_enqueue_admin');
 // Settings page content
 function corsivo_theme_settings_page() {
 	if (!current_user_can('manage_options')) {
-		wp_die(esc_html__('You are not allowed to manage Theme settings.', 'corsivo-theme-editor'), 403);
+		wp_die(esc_html__('You are not allowed to manage Theme settings.', 'corsivo-core-editor'), 403);
 	}
 
 	$settings = corsivo_theme_get_settings();
@@ -839,12 +839,14 @@ function corsivo_theme_settings_page() {
     $settings = corsivo_theme_get_settings(true);
     ?>
     <div class="corsivo-theme-wrap">
-        <h1>Theme</h1>
+        <h1>Corsivo Core Editor</h1>
 
         <?php $global = isset($settings['global']) ? $settings['global'] : array(); ?>
-		<div class="corsivo-theme-nav" role="tablist" aria-label="Theme sections">
+		<div class="corsivo-theme-nav" role="tablist" aria-label="Core Editor sections">
 			<button type="button" class="button" role="tab" aria-selected="false" data-section="global-settings">Settings</button>
 			<button type="button" class="button" role="tab" aria-selected="false" data-section="wordpress">WordPress</button>
+			<button type="button" class="button" role="tab" aria-selected="false" data-section="wordpress-features">WordPress Features</button>
+			<button type="button" class="button" role="tab" aria-selected="false" data-section="toolkit">Toolkit</button>
 			<?php if (!empty($global['tab_functional_pages'])): ?>
 				<button type="button" class="button" role="tab" aria-selected="false" data-section="functional-pages">Functional Pages</button>
 			<?php endif; ?>
@@ -892,6 +894,12 @@ function corsivo_theme_settings_page() {
 		</div>
 		<div class="corsivo-theme-section" data-section="history">
 			<?php corsivo_theme_activity_log_render(); ?>
+		</div>
+		<div class="corsivo-theme-section" data-section="wordpress-features">
+			<?php corsivo_core_wordpress_features_render(); ?>
+		</div>
+		<div class="corsivo-theme-section" data-section="toolkit">
+			<?php corsivo_core_toolkit_render(); ?>
 		</div>
 
         <!-- PHP form sections -->

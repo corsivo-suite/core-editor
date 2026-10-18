@@ -172,14 +172,14 @@ export default function BreakpointsTab() {
 					/>
 				) }
 				canRemoveItem={ ( item ) => ! isUsedByFonts( item.name ) }
-				addLabel={ __( 'Add breakpoint', 'corsivo-theme-editor' ) }
+				addLabel={ __( 'Add breakpoint', 'corsivo-core-editor' ) }
 				emptyState={ __(
 					'No breakpoints configured.',
-					'corsivo-theme-editor'
+					'corsivo-core-editor'
 				) }
 				itemsLabel={ __(
 					'Responsive breakpoints',
-					'corsivo-theme-editor'
+					'corsivo-core-editor'
 				) }
 			/>
 		</div>

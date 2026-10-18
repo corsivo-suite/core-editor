@@ -1,6 +1,6 @@
 # Third-party notices
 
-Corsivo Theme includes the following MIT-licensed components:
+Corsivo Core Editor includes the following MIT-licensed components:
 
 - `matthiasmullie/minify`, copyright (c) 2012 Matthias Mullie
 - `matthiasmullie/path-converter`, copyright (c) 2015 Matthias Mullie
@@ -15,3 +15,5 @@ The above copyright notices and this permission notice shall be included in all 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 The original notices for the PHP libraries are also preserved in `includes/libs/minify/LICENSE` and `includes/libs/path-converter/LICENSE`.
+
+The optional SVG Upload module includes `enshrined/svg-sanitize` 1.0.0 under GPL-2.0-or-later, isolated in the `CorsivoToolkit\Vendor\SvgSanitize` namespace. Its upstream license, package metadata and provenance are preserved in `includes/vendor/svg-sanitize/`.

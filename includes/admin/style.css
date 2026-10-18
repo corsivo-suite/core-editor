@@ -1,4 +1,4 @@
-/* Corsivo Theme Admin */
+/* Corsivo Core Editor Admin */
 .corsivo-theme-wrap {
 	max-width: 1200px;
 	margin: 20px 0 0;
@@ -92,6 +92,8 @@
 /* Active section visibility */
 .corsivo-theme-wrap[data-active="global-settings"] .corsivo-theme-section[data-section="global-settings"],
 .corsivo-theme-wrap[data-active="wordpress"] .corsivo-theme-section[data-section="wordpress"],
+.corsivo-theme-wrap[data-active="wordpress-features"] .corsivo-theme-section[data-section="wordpress-features"],
+.corsivo-theme-wrap[data-active="toolkit"] .corsivo-theme-section[data-section="toolkit"],
 .corsivo-theme-wrap[data-active="custom-slugs"] .corsivo-theme-section[data-section="custom-slugs"],
 .corsivo-theme-wrap[data-active="fonts"] .corsivo-theme-section[data-section="fonts"],
 .corsivo-theme-wrap[data-active="styles"] .corsivo-theme-section[data-section="styles"],
@@ -116,6 +118,8 @@
 .corsivo-theme-wrap[data-active="functional-pages"] #corsivo-theme-php-submit,
 .corsivo-theme-wrap[data-active="templates"] #corsivo-theme-php-submit,
 .corsivo-theme-wrap[data-active="integrations"] #corsivo-theme-php-submit,
+.corsivo-theme-wrap[data-active="wordpress-features"] #corsivo-theme-php-submit,
+.corsivo-theme-wrap[data-active="toolkit"] #corsivo-theme-php-submit,
 .corsivo-theme-wrap[data-active="history"] #corsivo-theme-php-submit {
 	display: none;
 }

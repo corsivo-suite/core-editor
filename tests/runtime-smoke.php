@@ -327,7 +327,7 @@ $update_started_at = time();
 corsivo_theme_activity_schema_after_plugin_update(null, array(
 	'action' => 'update',
 	'type' => 'plugin',
-	'plugin' => plugin_basename(CORSIVO_THEME_EDITOR_FILE),
+	'plugin' => plugin_basename(CORSIVO_CORE_EDITOR_FILE),
 ));
 $update_scheduled_at = wp_next_scheduled('corsivo_theme_verify_activity_storage');
 $current_update_invalidated = !corsivo_theme_activity_schema_option_record(CORSIVO_THEME_ACTIVITY_SCHEMA_VERIFIED_OPTION)['exists']
@@ -343,7 +343,7 @@ $future_update_before = serialize(corsivo_theme_activity_schema_option_record(CO
 corsivo_theme_activity_schema_after_plugin_update(null, array(
 	'action' => 'update',
 	'type' => 'plugin',
-	'plugins' => array(plugin_basename(CORSIVO_THEME_EDITOR_FILE)),
+	'plugins' => array(plugin_basename(CORSIVO_CORE_EDITOR_FILE)),
 ));
 $future_update_preserved = serialize(corsivo_theme_activity_schema_option_record(CORSIVO_THEME_ACTIVITY_SCHEMA_VERIFIED_OPTION)) === $future_update_before;
 $restore_storage_snapshot($update_baseline);
@@ -615,4 +615,4 @@ if (!empty($failed)) {
 	WP_CLI::error('Failed: ' . implode(', ', $failed));
 }
 
-WP_CLI::success('Corsivo Theme runtime smoke tests passed.');
+WP_CLI::success('Corsivo Core Editor runtime smoke tests passed.');

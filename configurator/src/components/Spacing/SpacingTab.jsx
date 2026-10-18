@@ -123,7 +123,7 @@ export default function SpacingTab() {
 
 			<Repeater
 				{ ...repeaterTranslations }
-				label={ __( 'Spacing presets', 'corsivo-theme-editor' ) }
+				label={ __( 'Spacing presets', 'corsivo-core-editor' ) }
 				items={ spacingSizes }
 				onChange={ ( nextSpacingSizes ) =>
 					update( { spacingSizes: nextSpacingSizes } )
@@ -133,12 +133,12 @@ export default function SpacingTab() {
 				getItemLabel={ ( preset ) =>
 					preset.name ||
 					preset.slug ||
-					__( 'Spacing preset', 'corsivo-theme-editor' )
+					__( 'Spacing preset', 'corsivo-core-editor' )
 				}
 				renderItemHeader={ ( { item } ) =>
 					item.name ||
 					item.slug ||
-					__( 'Spacing preset', 'corsivo-theme-editor' )
+					__( 'Spacing preset', 'corsivo-core-editor' )
 				}
 				renderItem={ ( { item, onChange } ) => (
 					<SpacingPresetFields
@@ -147,10 +147,10 @@ export default function SpacingTab() {
 					/>
 				) }
 				collapsible={ false }
-				addLabel={ __( 'Add spacing preset', 'corsivo-theme-editor' ) }
+				addLabel={ __( 'Add spacing preset', 'corsivo-core-editor' ) }
 				emptyState={ __(
 					'No spacing presets configured.',
-					'corsivo-theme-editor'
+					'corsivo-core-editor'
 				) }
 			/>
 		</div>

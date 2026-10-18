@@ -95,7 +95,7 @@ add_filter('corsivo_theme_available_contexts', 'corsivo_theme_woocommerce_contex
 
 function corsivo_theme_save_integrations() {
 	if (!current_user_can('manage_options')) {
-		wp_die(esc_html__('You are not allowed to manage integrations.', 'corsivo-theme-editor'), 403);
+		wp_die(esc_html__('You are not allowed to manage integrations.', 'corsivo-core-editor'), 403);
 	}
 
 	check_admin_referer('corsivo_theme_save_integrations');
@@ -118,7 +118,7 @@ function corsivo_theme_save_integrations() {
 		array('before' => $old_integrations, 'after' => $new_integrations)
 	);
 
-	wp_safe_redirect(admin_url('options-general.php?page=corsivo-theme-editor&corsivo-theme-notice=integrations-saved#integrations'));
+	wp_safe_redirect(admin_url('options-general.php?page=corsivo-core-editor&corsivo-theme-notice=integrations-saved#integrations'));
 	exit;
 }
 add_action('admin_post_corsivo_theme_save_integrations', 'corsivo_theme_save_integrations');

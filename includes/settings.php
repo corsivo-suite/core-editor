@@ -45,8 +45,8 @@ function corsivo_theme_generated_cache_location($create = true) {
 	}
 
 	$key = sanitize_key(get_stylesheet()) . '-' . get_current_blog_id();
-	$path = trailingslashit($upload_dir['basedir']) . 'corsivo-theme-editor/cache/' . $key;
-	$url = trailingslashit($upload_dir['baseurl']) . 'corsivo-theme-editor/cache/' . $key;
+	$path = trailingslashit($upload_dir['basedir']) . 'corsivo-core-editor/cache/' . $key;
+	$url = trailingslashit($upload_dir['baseurl']) . 'corsivo-core-editor/cache/' . $key;
 	if ($create && !is_dir($path) && !wp_mkdir_p($path)) {
 		return new WP_Error('corsivo_theme_cache_directory_failed', 'Unable to create the generated asset cache directory.');
 	}

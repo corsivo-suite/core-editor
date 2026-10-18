@@ -1,25 +1,32 @@
 <?php
 	/**
 		* @wordpress-plugin
-		* Plugin Name:       Corsivo Theme
-		* Description:       A visual design system configurator for WordPress themes. Manages fonts, colors, breakpoints, and generates theme.json + CSS from a JSON config.
-		* Version:           1.4.0
+		* Plugin Name:       Corsivo Core Editor
+		* Description:       Configure WordPress features, optional site modules and the theme design system from one administration page.
+		* Version:           2.0.0
 		* Author:            Salvatore Corsi
 		* Author URI:        https://salvatorecorsi.com
-		* Plugin URI:        https://github.com/corsivo-suite/theme-editor
+		* Plugin URI:        https://github.com/corsivo-suite/core-editor
 		* License:           GPL-2.0-or-later
 		* License URI:       https://www.gnu.org/licenses/gpl-2.0.html
-		* Text Domain:       corsivo-theme-editor
+		* Text Domain:       corsivo-core-editor
 		* Requires at least: 6.6
 		* Requires PHP:      8.1
-		* Update URI:        https://www.corsivo.dev/plugins/corsivo-theme-editor
+		* Update URI:        https://www.corsivo.dev/plugins/corsivo-core-editor
 	*/
 
 	if (!defined('ABSPATH')) exit;
 
-	define('CORSIVO_THEME_EDITOR_VERSION', '1.4.0');
-	define('CORSIVO_THEME_EDITOR_FILE', __FILE__);
-	define('CORSIVO_THEME_EDITOR_DIR', plugin_dir_path(__FILE__));
+	define('CORSIVO_CORE_EDITOR_VERSION', '2.0.0');
+	define('CORSIVO_CORE_EDITOR_FILE', __FILE__);
+	define('CORSIVO_CORE_EDITOR_DIR', plugin_dir_path(__FILE__));
+
+	require_once __DIR__ . '/includes/wordpress-features.php';
+	require_once __DIR__ . '/includes/toolkit.php';
+	if (is_admin()) {
+		require_once __DIR__ . '/includes/admin/wordpress-features.php';
+		require_once __DIR__ . '/includes/admin/toolkit.php';
+	}
 
 	require_once __DIR__ . '/includes/activity-storage.php';
 	require_once __DIR__ . '/includes/activity-log.php';

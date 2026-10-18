@@ -1589,7 +1589,7 @@ if (!defined('ABSPATH')) exit;
 		if (is_admin()) {
 			$screen = function_exists('get_current_screen') ? get_current_screen() : null;
 			if (!$screen) return;
-			if (!$screen->is_block_editor() && $screen->id !== 'settings_page_corsivo-theme-editor') return;
+			if (!$screen->is_block_editor() && $screen->id !== 'settings_page_corsivo-core-editor') return;
 		}
 
 		$import_fonts = apply_filters('corsivo_theme_custom_fonts', array());
@@ -1699,7 +1699,7 @@ if (!defined('ABSPATH')) exit;
 	}
 
 	/**
-	 * Read the merged theme.json data after Corsivo Theme's runtime injection.
+	 * Read the merged theme.json data after Corsivo Core Editor's runtime injection.
 	 */
 	function corsivo_theme_get_merged_theme_json_data() {
 		if (!class_exists('WP_Theme_JSON_Resolver')) {
@@ -2497,14 +2497,14 @@ if (!defined('ABSPATH')) exit;
 			}
 
 			wp_enqueue_script(
-				'corsivo-theme-editor-panel',
+				'corsivo-core-editor-panel',
 				plugin_dir_url(__FILE__) . 'admin/editor-panel.js',
 				array('wp-plugins', 'wp-editor', 'wp-edit-post', 'wp-components', 'wp-data', 'wp-element'),
 				filemtime(plugin_dir_path(__FILE__) . 'admin/editor-panel.js'),
 				true
 			);
 
-			wp_localize_script('corsivo-theme-editor-panel', 'corsivoThemeEditorPanel', array(
+			wp_localize_script('corsivo-core-editor-panel', 'corsivoThemeEditorPanel', array(
 				'options'      => $options,
 				'cssMap'       => !empty($css_map) ? $css_map : (object) array(),
 				'automaticCss' => $automatic_css,
@@ -2512,7 +2512,7 @@ if (!defined('ABSPATH')) exit;
 			));
 		}
 
-		$inline_script_handle = $is_footer_page ? 'wp-edit-post' : 'corsivo-theme-editor-panel';
+		$inline_script_handle = $is_footer_page ? 'wp-edit-post' : 'corsivo-core-editor-panel';
 
 		// --- 5. Unregister hidden block styles via JS ---
 		// Hidden font styles (paragraph/heading)

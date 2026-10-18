@@ -56,10 +56,10 @@ $capabilities = array('manage_options' => true);
 corsivo_theme_settings_menu();
 corsivo_theme_hide_developer_settings_menu();
 
-corsivo_theme_navigation_assert(empty($visible_submenus['options-general.php']['corsivo-theme-editor']), 'Theme menu remains visible to a non-developer.');
-corsivo_theme_navigation_assert(isset($registered_pages['corsivo-theme-editor']), 'Theme page registration was removed with its navigation entry.');
-corsivo_theme_navigation_assert($registered_pages['corsivo-theme-editor']['capability'] === 'manage_options', 'Theme page capability changed.');
-corsivo_theme_navigation_assert($registered_pages['corsivo-theme-editor']['callback'] === 'corsivo_theme_settings_page' && function_exists('corsivo_theme_settings_page'), 'Theme direct page callback is unavailable.');
+corsivo_theme_navigation_assert(empty($visible_submenus['options-general.php']['corsivo-core-editor']), 'Theme menu remains visible to a non-developer.');
+corsivo_theme_navigation_assert(isset($registered_pages['corsivo-core-editor']), 'Theme page registration was removed with its navigation entry.');
+corsivo_theme_navigation_assert($registered_pages['corsivo-core-editor']['capability'] === 'manage_options', 'Theme page capability changed.');
+corsivo_theme_navigation_assert($registered_pages['corsivo-core-editor']['callback'] === 'corsivo_theme_settings_page' && function_exists('corsivo_theme_settings_page'), 'Theme direct page callback is unavailable.');
 
 $registered_pages = array();
 $visible_submenus = array();
@@ -67,6 +67,6 @@ $capabilities = array('manage_options' => true, 'manage_corsivo_developer_tools'
 corsivo_theme_settings_menu();
 corsivo_theme_hide_developer_settings_menu();
 
-corsivo_theme_navigation_assert(!empty($visible_submenus['options-general.php']['corsivo-theme-editor']), 'Theme menu is hidden from a developer.');
+corsivo_theme_navigation_assert(!empty($visible_submenus['options-general.php']['corsivo-core-editor']), 'Theme menu is hidden from a developer.');
 
-echo 'Corsivo Theme admin navigation checks passed (' . $assertions . ' assertions).' . PHP_EOL;
+echo 'Corsivo Core Editor admin navigation checks passed (' . $assertions . ' assertions).' . PHP_EOL;

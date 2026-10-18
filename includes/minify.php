@@ -57,7 +57,7 @@ function corsivo_theme_resolve_theme_asset($source, $extension) {
 }
 
 function corsivo_theme_asset_fingerprint($type, $assets) {
-	$parts = array(CORSIVO_THEME_EDITOR_VERSION, $type);
+	$parts = array(CORSIVO_CORE_EDITOR_VERSION, $type);
 	foreach ($assets as $asset) {
 		$path = is_array($asset) ? $asset['path'] : $asset;
 		$parts[] = wp_normalize_path($path) . ':' . hash_file('sha256', $path);

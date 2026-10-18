@@ -1,7 +1,7 @@
 <?php
 if (!defined('ABSPATH') || !defined('WP_CLI') || !WP_CLI) exit(1);
 
-require_once dirname(__DIR__) . '/corsivo-theme-editor.php';
+require_once dirname(__DIR__) . '/corsivo-core-editor.php';
 
 function corsivo_theme_runtime_assert($condition, $message) {
 	if (!$condition) throw new RuntimeException($message);

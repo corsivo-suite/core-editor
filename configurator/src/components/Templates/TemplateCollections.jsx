@@ -52,11 +52,11 @@ export function ContextAssignments( {
 			createItem={ () => ( { context: '', template: '' } ) }
 			getItemLabel={ ( item ) =>
 				item.context ||
-				__( 'Context assignment', 'corsivo-theme-editor' )
+				__( 'Context assignment', 'corsivo-core-editor' )
 			}
 			renderItemHeader={ ( { item } ) =>
 				item.context ||
-				__( 'Context assignment', 'corsivo-theme-editor' )
+				__( 'Context assignment', 'corsivo-core-editor' )
 			}
 			renderItem={ ( { item, onChange: updateItem } ) => (
 				<div className="ts-context-assignments__fields">
@@ -91,12 +91,12 @@ export function ContextAssignments( {
 					/>
 				</div>
 			) }
-			addLabel={ __( 'Add assignment', 'corsivo-theme-editor' ) }
+			addLabel={ __( 'Add assignment', 'corsivo-core-editor' ) }
 			emptyState={ __(
 				'No context assignments configured.',
-				'corsivo-theme-editor'
+				'corsivo-core-editor'
 			) }
-			itemsLabel={ __( 'Context assignments', 'corsivo-theme-editor' ) }
+			itemsLabel={ __( 'Context assignments', 'corsivo-core-editor' ) }
 		/>
 	);
 }
@@ -120,13 +120,13 @@ export function StyleTemplateCollection( {
 			getItemLabel={ ( item ) =>
 				item.name ||
 				item.slug ||
-				__( 'Style template', 'corsivo-theme-editor' )
+				__( 'Style template', 'corsivo-core-editor' )
 			}
 			renderItemHeader={ ( { item } ) => (
 				<div className="ts-style-template__summary">
 					<span className="ts-style-template__name">
 						{ item.name ||
-							__( 'Untitled', 'corsivo-theme-editor' ) }
+							__( 'Untitled', 'corsivo-core-editor' ) }
 					</span>
 					{ item.slug && (
 						<span className="ts-style-template__slug">
@@ -201,12 +201,12 @@ export function StyleTemplateCollection( {
 					{ renderFields( item, updateItem ) }
 				</div>
 			) }
-			addLabel={ __( 'Add template', 'corsivo-theme-editor' ) }
+			addLabel={ __( 'Add template', 'corsivo-core-editor' ) }
 			emptyState={ __(
 				'No style templates configured.',
-				'corsivo-theme-editor'
+				'corsivo-core-editor'
 			) }
-			itemsLabel={ __( 'Style templates', 'corsivo-theme-editor' ) }
+			itemsLabel={ __( 'Style templates', 'corsivo-core-editor' ) }
 		/>
 	);
 }

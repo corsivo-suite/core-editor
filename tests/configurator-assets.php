@@ -20,7 +20,7 @@ foreach (['assets', 'templates'] as $runtime_directory) {
 }
 $source = file_get_contents($configurator_dir . '/src/index.js');
 $settings = file_get_contents($plugin_dir . '/includes/admin/settings.php');
-$plugin_header = file_get_contents($plugin_dir . '/corsivo-theme-editor.php');
+$plugin_header = file_get_contents($plugin_dir . '/corsivo-core-editor.php');
 $asset_path = $configurator_dir . '/build/index.asset.php';
 $script_path = $configurator_dir . '/build/index.js';
 $style_path = $configurator_dir . '/build/index.css';
@@ -86,7 +86,7 @@ corsivo_theme_asset_assert(
 	'Configurator stylesheet replaces its LTR build with the generated RTL build on RTL sites.'
 );
 corsivo_theme_asset_assert(
-	substr_count($settings, "wp_set_script_translations('corsivo-theme-configurator', 'corsivo-theme-editor')") === 1,
+	substr_count($settings, "wp_set_script_translations('corsivo-theme-configurator', 'corsivo-core-editor')") === 1,
 	'Configurator translations use the plugin text domain.'
 );
 

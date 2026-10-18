@@ -956,7 +956,7 @@ function corsivo_theme_activity_schema_after_plugin_update($upgrader, $options) 
 		array_map('strval', (array) ($options['plugins'] ?? [])),
 		isset($options['plugin']) ? [(string) $options['plugin']] : []
 	)));
-	if (!in_array(plugin_basename(CORSIVO_THEME_EDITOR_FILE), $plugins, true)) {
+	if (!in_array(plugin_basename(CORSIVO_CORE_EDITOR_FILE), $plugins, true)) {
 		return;
 	}
 

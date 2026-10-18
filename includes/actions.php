@@ -229,7 +229,7 @@ function corsivo_theme_archive_page_template( $template ) {
 		'post_type' => $post_type,
 		'template' => $resolved_template,
 	);
-	return CORSIVO_THEME_EDITOR_DIR . 'templates/archive-page-proxy.php';
+	return CORSIVO_CORE_EDITOR_DIR . 'templates/archive-page-proxy.php';
 }
 add_filter( 'template_include', 'corsivo_theme_archive_page_template', 40 );
 

@@ -1,3 +1,11 @@
+= 2.0.0 — 18/10/2026 =
+* Rinominati plugin, directory e bootstrap in Corsivo Core Editor; repository trasferito da corsivo-suite/theme-editor a corsivo-suite/core-editor e riferimenti di aggiornamento e distribuzione allineati.
+* Aggiunta la sezione WordPress Features: pingback/trackback, revisioni con rispetto della costante ambiente, Heartbeat per amministrazione/editor, pattern remoti ed emoji. WP-Cron mostra stato ed eventi in sola lettura.
+* Integrati i cinque moduli Toolkit: commenti, upload SVG/SVGZ sanitizzato, Grid con shortcode/API PHP, Gutenberg prodotti WooCommerce e notice WooCommerce in overlay, con dipendenze e licenze locali.
+* Separati form e option per sito dalle impostazioni del tema. Importate una sola volta le selezioni legacy, rispettando anche una lista vuota, e soppressi loader e interfaccia del vecchio Toolkit quando Core Editor è presente.
+* Preservati API corsivo_theme_*, metadati, route, corsivo-theme.json e percorso uploads multisite esistenti. Nessuna nuova policy attivata automaticamente.
+* Estese regressioni WordPress, Toolkit e sicurezza; riordino estetico della pagina opzioni rinviato.
+
 = Non rilasciato — 15/10/2026 =
 * includes/functions.php: gli stili nascosti nel selettore Gutenberg conservano registrazione server, theme.json e CSS frontend per i contenuti già pubblicati.
 * includes/functions.php: override tipografici responsive applicati anche agli stili predefiniti, globali e dei template, nell'editor e nel frontend.
@@ -16,7 +24,7 @@
 * configurator/src/store.js e components/InstalledFonts/InstalledFontsTab.jsx: upload associato all'identità della famiglia senza perdere modifiche concorrenti o ripristinare famiglie eliminate; revisione sincronizzata con il form PHP.
 * package.json: inclusi assets/ e templates/ nella distribuzione; aggiunti test:php e regressioni PHP al comando check.
 * includes/actions.php e templates/archive-page-proxy.php: rewrite compatibili con query_var personalizzata o disattivata, flush per spostamenti della pagina archivio e dei suoi antenati, Query Loop ereditato e paginazione eseguiti nel contesto dell'archivio.
-* includes/rest-api.php e corsivo-theme-editor.php: rendering REST nel contesto del post e colori footer con trasparenza validata.
+* includes/rest-api.php e corsivo-core-editor.php: rendering REST nel contesto del post e colori footer con trasparenza validata.
 * includes/minify.php e includes/settings.php: esclusi asset con inline, traduzioni, media o strategie incompatibili; preservati ordine e dipendenze senza doppia esecuzione. Bundle conservati fra richieste e salvataggi, pulizia riservata al rebuild esplicito.
 * tests/backend-regressions.php, tests/minify-regressions.php e tests/runtime-regressions.php: regressioni backend, dipendenze e cache, proxy archivio, footer e lock del writer; estese le regressioni React nei test del configuratore.
 * Versione mantenuta a 1.4.0; conservate le precedenti note non rilasciate.
@@ -35,7 +43,7 @@
 * Estesi lint e test all'intero sorgente JS/SCSS, aggiunti test delle API pagine e CI su PHP 8.1/8.4 e Node 20 con build e pacchetto verificati.
 * Rigenerati i bundle contro il package condiviso corrente, includendo il refresh visuale e gli asset RTL; contratti runtime invariati.
 * Nascosta ai non-developer la voce `Impostazioni > Theme` tramite la capability virtuale condivisa, mantenendo pagina, URL diretto e capability originali invariati.
-* Resa la palette di Corsivo Theme l'unica fonte di verità nell'editor, disattivando i preset colore core che nascondevano gli slug `black` e `white`.
+* Resa la palette di Corsivo Core Editor l'unica fonte di verità nell'editor, disattivando i preset colore core che nascondevano gli slug `black` e `white`.
 * Esteso il runtime dichiarativo di `blockStyles` con supporto a `selector`, `innerSelector`, `parts` e `register: false`.
 * Normalizzati i nomi dei blocchi custom con slash e corretto il case study `candied-world`, che ora genera un selettore valido e applica correttamente pink/black.
 * Ridisegnata la navigazione amministrativa in stile WordPress 7, con stato attivo, tastiera e scorrimento orizzontale del tab selezionato.
