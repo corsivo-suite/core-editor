@@ -1,74 +1,84 @@
 /* Corsivo Core Editor Admin */
 .corsivo-theme-wrap {
-	max-width: 1200px;
+	max-width: 1440px;
 	margin: 20px 0 0;
 	margin-inline-end: 20px;
 }
 
-/* Navigation */
-.corsivo-theme-nav {
+.corsivo-theme-wrap [hidden] {
+	display: none !important;
+}
+
+.corsivo-core-group-nav {
 	display: flex;
 	align-items: center;
 	gap: 4px;
-	max-width: 100%;
-	margin-block-start: 20px;
-	padding: 2px 2px 6px;
-	overflow-x: auto;
-	overflow-y: hidden;
-	overscroll-behavior-inline: contain;
-	scrollbar-width: thin;
+	flex-wrap: wrap;
+	margin: 20px 0 24px;
+	padding: 0 0 8px;
+	border-block-end: 1px solid #dcdcde;
 }
 
-.corsivo-theme-nav > button.button {
-	flex: 0 0 auto;
-	min-height: 32px;
+.corsivo-core-group-nav a,
+.corsivo-core-sidebar a {
+	display: block;
 	margin: 0;
-	padding: 0 10px;
-	border-color: transparent;
+	padding: 10px 16px;
+	border: 1px solid transparent;
 	border-radius: 4px;
-	background: transparent;
 	color: #50575e;
 	box-shadow: none;
-	line-height: 30px;
-	white-space: nowrap;
+	font-weight: 500;
+	line-height: 1.4;
+	text-decoration: none;
 }
 
-.corsivo-theme-nav > button.button:hover {
+.corsivo-core-sidebar a {
+	padding: 10px 12px;
+	border-inline-start-width: 3px;
+	border-radius: 0 4px 4px 0;
+}
+
+.corsivo-core-group-nav a:hover,
+.corsivo-core-sidebar a:hover {
 	background: rgba(var(--wp-admin-theme-color--rgb, 34, 113, 177), 0.04);
-	border-color: transparent;
 	color: var(--wp-admin-theme-color-darker-20, #135e96);
 }
 
-.corsivo-theme-nav > button.button:focus {
-	background: rgba(var(--wp-admin-theme-color--rgb, 34, 113, 177), 0.04);
-	border-color: var(--wp-admin-theme-color, #2271b1);
-	color: var(--wp-admin-theme-color-darker-20, #135e96);
-	box-shadow: 0 0 0 var(--wp-admin-border-width-focus, 1.5px) var(--wp-admin-theme-color, #2271b1);
-	outline: 2px solid transparent;
+.corsivo-core-group-nav a:focus-visible,
+.corsivo-core-sidebar a:focus-visible {
+	outline: 2px solid var(--wp-admin-theme-color, #2271b1);
+	outline-offset: 2px;
 }
 
-.corsivo-theme-nav > button.button:active {
-	background: rgba(var(--wp-admin-theme-color--rgb, 34, 113, 177), 0.08);
-	border-color: var(--wp-admin-theme-color-darker-20, #135e96);
-	color: var(--wp-admin-theme-color-darker-20, #135e96);
-	box-shadow: none;
-}
-
-.corsivo-theme-nav > button.button.active {
+.corsivo-core-group-nav a[aria-current] {
 	background: rgba(var(--wp-admin-theme-color--rgb, 34, 113, 177), 0.08);
 	border-color: var(--wp-admin-theme-color, #2271b1);
 	color: var(--wp-admin-theme-color, #2271b1);
 }
 
-.corsivo-theme-nav > button.button.active:hover {
-	background: rgba(var(--wp-admin-theme-color--rgb, 34, 113, 177), 0.12);
-	border-color: var(--wp-admin-theme-color-darker-20, #135e96);
-	color: var(--wp-admin-theme-color-darker-20, #135e96);
+.corsivo-core-layout {
+	display: grid;
+	grid-template-columns: 188px minmax(0, 1fr);
+	align-items: start;
+	gap: 24px;
 }
 
-.corsivo-theme-nav > button.button.active:focus {
-	border-color: var(--wp-admin-theme-color, #2271b1);
-	box-shadow: 0 0 0 var(--wp-admin-border-width-focus, 1.5px) var(--wp-admin-theme-color, #2271b1);
+.corsivo-core-sidebar,
+.corsivo-core-content {
+	min-width: 0;
+}
+
+.corsivo-core-submenu {
+	display: grid;
+	gap: 4px;
+}
+
+.corsivo-core-sidebar a[aria-current] {
+	border-inline-start-color: var(--wp-admin-theme-color, #2271b1);
+	background: rgba(var(--wp-admin-theme-color--rgb, 34, 113, 177), 0.08);
+	color: var(--wp-admin-theme-color, #2271b1);
+	font-weight: 600;
 }
 
 /* Unified heading size (match React configurator tabs) */
@@ -80,8 +90,7 @@
 
 /* Sections */
 .corsivo-theme-section {
-	display: none;
-	margin-block-start: 16px;
+	margin: 0;
 	background: #fff;
 	padding: 24px;
 	border: 1px solid #dcdcde;
@@ -89,39 +98,27 @@
 	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
-/* Active section visibility */
-.corsivo-theme-wrap[data-active="global-settings"] .corsivo-theme-section[data-section="global-settings"],
-.corsivo-theme-wrap[data-active="wordpress"] .corsivo-theme-section[data-section="wordpress"],
-.corsivo-theme-wrap[data-active="wordpress-features"] .corsivo-theme-section[data-section="wordpress-features"],
-.corsivo-theme-wrap[data-active="toolkit"] .corsivo-theme-section[data-section="toolkit"],
-.corsivo-theme-wrap[data-active="custom-slugs"] .corsivo-theme-section[data-section="custom-slugs"],
-.corsivo-theme-wrap[data-active="fonts"] .corsivo-theme-section[data-section="fonts"],
-.corsivo-theme-wrap[data-active="styles"] .corsivo-theme-section[data-section="styles"],
-.corsivo-theme-wrap[data-active="colors"] .corsivo-theme-section[data-section="colors"],
-.corsivo-theme-wrap[data-active="breakpoints"] .corsivo-theme-section[data-section="breakpoints"],
-.corsivo-theme-wrap[data-active="spacing"] .corsivo-theme-section[data-section="spacing"],
-.corsivo-theme-wrap[data-active="overview"] .corsivo-theme-section[data-section="overview"],
-.corsivo-theme-wrap[data-active="functional-pages"] .corsivo-theme-section[data-section="functional-pages"],
-.corsivo-theme-wrap[data-active="templates"] .corsivo-theme-section[data-section="templates"],
-.corsivo-theme-wrap[data-active="integrations"] .corsivo-theme-section[data-section="integrations"],
-.corsivo-theme-wrap[data-active="history"] .corsivo-theme-section[data-section="history"] {
-	display: block;
+.corsivo-core-content .ts-overview__colors {
+	grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
 }
 
-/* Hide PHP submit when React section is active */
-.corsivo-theme-wrap[data-active="fonts"] #corsivo-theme-php-submit,
-.corsivo-theme-wrap[data-active="styles"] #corsivo-theme-php-submit,
-.corsivo-theme-wrap[data-active="colors"] #corsivo-theme-php-submit,
-.corsivo-theme-wrap[data-active="breakpoints"] #corsivo-theme-php-submit,
-.corsivo-theme-wrap[data-active="spacing"] #corsivo-theme-php-submit,
-.corsivo-theme-wrap[data-active="overview"] #corsivo-theme-php-submit,
-.corsivo-theme-wrap[data-active="functional-pages"] #corsivo-theme-php-submit,
-.corsivo-theme-wrap[data-active="templates"] #corsivo-theme-php-submit,
-.corsivo-theme-wrap[data-active="integrations"] #corsivo-theme-php-submit,
-.corsivo-theme-wrap[data-active="wordpress-features"] #corsivo-theme-php-submit,
-.corsivo-theme-wrap[data-active="toolkit"] #corsivo-theme-php-submit,
-.corsivo-theme-wrap[data-active="history"] #corsivo-theme-php-submit {
-	display: none;
+.corsivo-core-content .ts-overview__var-row,
+.corsivo-core-content .ts-overview__color-item,
+.corsivo-core-content .ts-overview__section h3,
+.corsivo-core-content .ts-configurator__actions {
+	flex-wrap: wrap;
+}
+
+.corsivo-core-content .ts-overview__copy {
+	max-width: 100%;
+	white-space: normal;
+	overflow-wrap: anywhere;
+}
+
+.corsivo-core-content .ts-overview__var-resolved,
+.corsivo-core-content .ts-overview__var-desc {
+	min-width: 0;
+	overflow-wrap: anywhere;
 }
 
 /* Standard WP form table */
@@ -229,20 +226,44 @@ tbody.custom-post-type-archive {
 	background: #fce8e8;
 }
 
+@media (max-width: 1200px) {
+
+	.corsivo-core-content .form-table th {
+		width: 180px;
+	}
+}
+
+@media (max-width: 960px) {
+
+	.corsivo-core-layout {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 16px;
+	}
+
+	.corsivo-core-submenu {
+		display: flex;
+		flex-wrap: wrap;
+	}
+
+	.corsivo-core-sidebar a {
+		padding-inline: 12px;
+		border-inline-start-width: 1px;
+		border-radius: 4px;
+	}
+
+	.corsivo-core-sidebar a[aria-current] {
+		border-color: var(--wp-admin-theme-color, #2271b1);
+	}
+}
+
 @media (max-width: 782px) {
 
 	.corsivo-theme-wrap {
 		margin-inline-end: 10px;
 	}
 
-	.corsivo-theme-nav {
-		margin-block-start: 16px;
-	}
-
-	.corsivo-theme-nav > button.button {
-		min-height: 40px;
-		padding-inline: 12px;
-		line-height: 38px;
+	.corsivo-core-group-nav {
+		margin-block: 16px;
 	}
 
 	.corsivo-theme-section {

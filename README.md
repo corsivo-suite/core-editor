@@ -4,7 +4,9 @@ Configuratore WordPress della suite Corsivo: riunisce design system del tema, fu
 
 ## Scopo
 
-Gestire il design system del tema e il comportamento del sito da Impostazioni → Corsivo Core Editor. I token del tema vengono applicati a runtime dentro `theme.json` e come CSS iniettato; funzionalità WordPress e moduli opzionali sono configurati per sito, indipendentemente dal tema attivo. La struttura visuale esistente resta invariata, con due nuove sezioni dedicate.
+Gestire il design system del tema e il comportamento del sito da Impostazioni → Corsivo Core Editor. I token del tema vengono applicati a runtime dentro `theme.json` e come CSS iniettato; funzionalità WordPress e moduli opzionali sono configurati per sito, indipendentemente dal tema attivo.
+
+La pagina usa tre macrogruppi in alto e un sottomenù a sinistra delle opzioni. **Generali** raccoglie Overview, Settings, Integrations e History. **Design** raccoglie Breakpoints, Spacing, Colors, Fonts, Styles e Templates. **WordPress** raccoglie WordPress, WordPress Features e Toolkit, oltre a Functional Pages e Custom Slugs quando abilitate. Su schermi stretti il sottomenù precede i contenuti. I link diretti alle singole sezioni restano validi e ogni macrogruppo ricorda l'ultima sottosezione visitata durante la navigazione.
 
 ## Funzionalità WordPress e Toolkit
 
@@ -44,7 +46,7 @@ La rinomina riguarda nome, directory, file principale, repository, menu e distri
 - Minificazione opzionale CSS/JS in cache fingerprintata sotto `uploads/corsivo-core-editor/cache/`, preservando ordine e dipendenze. Gli asset con inline, traduzioni, media o strategie incompatibili restano gestiti da WordPress. I bundle precedenti rimangono disponibili fra richieste e salvataggi della configurazione; il rebuild esplicito pulisce la cache generata. I sorgenti del tema non vengono mai modificati.
 - Retention del log: cron giornaliero, 1–3650 giorni (default 90), 100–100000 voci (default 2000); gli utenti cancellati vengono anonimizzati. Log disattivabile da admin.
 - Multisite gestito per sito in attivazione, disattivazione e uninstall; l'uninstall rimuove tabella e opzioni del registro.
-- Il runtime PHP resta standalone; lo sviluppo del configuratore usa il package privato `@corsivo-suite/wp-admin-ui` alla versione esatta `0.1.0`. Requisiti WordPress 6.6+, PHP 8.1+. Versione 2.0.0.
+- Il runtime PHP resta standalone; lo sviluppo del configuratore usa il package privato `@corsivo-suite/wp-admin-ui` alla versione esatta `0.1.0`. Requisiti WordPress 6.6+, PHP 8.1+. Versione 2.1.0.
 
 ## Integrazioni con la suite
 
@@ -70,7 +72,7 @@ Il runtime smoke (WP-CLI, plugin attivo) verifica schema e prontezza del registr
 
 ## Configurazione
 
-Impostazioni → Corsivo Core Editor (`manage_options`). Sezioni: Settings, WordPress, WordPress Features, Toolkit, Breakpoints, Spacing, Colors, Fonts, Styles, Templates, Overview, Integrations, History, più Functional Pages e Custom Slugs attivabili da Settings. Toggle globali: `core_renders` (helper PHP `render_core_*` per i template), `gutenberg_footer` (pagina privata come footer a blocchi, link in Aspetto → Footer), `cpt_menu_parent` (evidenzia la voce di menu dell'archivio sul singolo CPT), `force_style_injection`, `minify_css`, `minify_js`. Export da admin: `theme.json` arricchito (usabile anche senza il plugin) e `theme-json.scss` con mappe SCSS di colori, font, breakpoint e spacing. Configuratore React buildato con `@wordpress/scripts` (`cd configurator && npm install && npm run build`). Con un tema di terze parti conviene un child theme, così `corsivo-theme.json` sopravvive agli aggiornamenti del parent.
+Impostazioni → Corsivo Core Editor (`manage_options`). Navigazione su due livelli: Generali (Overview, Settings, Integrations, History), Design (Breakpoints, Spacing, Colors, Fonts, Styles, Templates) e WordPress (WordPress, WordPress Features, Toolkit, più Functional Pages e Custom Slugs attivabili da Settings). Il sottomenù affianca le opzioni su desktop e passa sopra ai contenuti sotto 960 px. Hash, collegamenti esistenti e modifiche non salvate restano preservati durante la navigazione. Toggle globali: `core_renders` (helper PHP `render_core_*` per i template), `gutenberg_footer` (pagina privata come footer a blocchi, link in Aspetto → Footer), `cpt_menu_parent` (evidenzia la voce di menu dell'archivio sul singolo CPT), `force_style_injection`, `minify_css`, `minify_js`. Export da admin: `theme.json` arricchito (usabile anche senza il plugin) e `theme-json.scss` con mappe SCSS di colori, font, breakpoint e spacing. Configuratore React buildato con `@wordpress/scripts` (`cd configurator && npm install && npm run build`). Con un tema di terze parti conviene un child theme, così `corsivo-theme.json` sopravvive agli aggiornamenti del parent.
 ## Bootstrap, entry point e lifecycle
 
 `corsivo-core-editor.php` carica le funzionalità WordPress e Toolkit, quindi storage e journal dell'attività, amministrazione, integrazioni, funzioni di design system, REST pubblico e configuratore, stato delle pagine, impostazioni runtime e azioni WordPress. `includes/core-renders.php` è condizionale: viene incluso soltanto se la configurazione abilita gli helper di rendering del tema. Il configuratore React non è una seconda fonte dati: legge e scrive tramite REST lo stesso `corsivo-theme.json` consumato dalle funzioni PHP.

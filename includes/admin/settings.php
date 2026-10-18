@@ -778,7 +778,49 @@ function corsivo_theme_enqueue_admin($hook) {
 }
 add_action('admin_enqueue_scripts', 'corsivo_theme_enqueue_admin');
 
-// Settings page content
+function corsivo_core_editor_navigation_groups($settings) {
+	$groups = array(
+		'general' => array(
+			'label' => 'Generali',
+			'sections' => array(
+				'overview' => 'Overview',
+				'global-settings' => 'Settings',
+				'integrations' => 'Integrations',
+				'history' => 'History',
+			),
+		),
+		'design' => array(
+			'label' => 'Design',
+			'sections' => array(
+				'breakpoints' => 'Breakpoints',
+				'spacing' => 'Spacing',
+				'colors' => 'Colors',
+				'fonts' => 'Fonts',
+				'styles' => 'Styles',
+				'templates' => 'Templates',
+			),
+		),
+		'wordpress' => array(
+			'label' => 'WordPress',
+			'sections' => array(
+				'wordpress' => 'WordPress',
+				'wordpress-features' => 'WordPress Features',
+				'toolkit' => 'Toolkit',
+			),
+		),
+	);
+
+	$global = isset($settings['global']) && is_array($settings['global']) ? $settings['global'] : array();
+	if (!empty($global['tab_functional_pages'])) {
+		$groups['wordpress']['sections']['functional-pages'] = 'Functional Pages';
+	}
+	if (!empty($global['tab_custom_slugs'])) {
+		$groups['wordpress']['sections']['custom-slugs'] = 'Custom Slugs';
+	}
+
+	return $groups;
+}
+
 function corsivo_theme_settings_page() {
 	if (!current_user_can('manage_options')) {
 		wp_die(esc_html__('You are not allowed to manage Theme settings.', 'corsivo-core-editor'), 403);
@@ -838,87 +880,80 @@ function corsivo_theme_settings_page() {
 
     $settings = corsivo_theme_get_settings(true);
     ?>
-    <div class="corsivo-theme-wrap">
+    <div class="wrap corsivo-theme-wrap">
         <h1>Corsivo Core Editor</h1>
 
-        <?php $global = isset($settings['global']) ? $settings['global'] : array(); ?>
-		<div class="corsivo-theme-nav" role="tablist" aria-label="Core Editor sections">
-			<button type="button" class="button" role="tab" aria-selected="false" data-section="global-settings">Settings</button>
-			<button type="button" class="button" role="tab" aria-selected="false" data-section="wordpress">WordPress</button>
-			<button type="button" class="button" role="tab" aria-selected="false" data-section="wordpress-features">WordPress Features</button>
-			<button type="button" class="button" role="tab" aria-selected="false" data-section="toolkit">Toolkit</button>
-			<?php if (!empty($global['tab_functional_pages'])): ?>
-				<button type="button" class="button" role="tab" aria-selected="false" data-section="functional-pages">Functional Pages</button>
-			<?php endif; ?>
-			<?php if (!empty($global['tab_custom_slugs'])): ?>
-				<button type="button" class="button" role="tab" aria-selected="false" data-section="custom-slugs">Custom Slugs</button>
-			<?php endif; ?>
-			<button type="button" class="button" role="tab" aria-selected="false" data-section="breakpoints">Breakpoints</button>
-			<button type="button" class="button" role="tab" aria-selected="false" data-section="spacing">Spacing</button>
-			<button type="button" class="button" role="tab" aria-selected="false" data-section="colors">Colors</button>
-			<button type="button" class="button" role="tab" aria-selected="false" data-section="fonts">Fonts</button>
-			<button type="button" class="button" role="tab" aria-selected="false" data-section="styles">Styles</button>
-			<button type="button" class="button" role="tab" aria-selected="false" data-section="templates">Templates</button>
-			<button type="button" class="button" role="tab" aria-selected="false" data-section="overview">Overview</button>
-			<button type="button" class="button" role="tab" aria-selected="false" data-section="integrations">Integrations</button>
-			<button type="button" class="button" role="tab" aria-selected="false" data-section="history">History</button>
-        </div>
-
-        <!-- React sections (outside form to prevent submit on button clicks) -->
-        <div class="corsivo-theme-section" data-section="overview">
-            <div id="corsivo-theme-configurator-overview"></div>
-        </div>
-        <div class="corsivo-theme-section" data-section="fonts">
-            <div id="corsivo-theme-configurator-fonts"></div>
-        </div>
-        <div class="corsivo-theme-section" data-section="styles">
-            <div id="corsivo-theme-configurator-styles"></div>
-        </div>
-        <div class="corsivo-theme-section" data-section="colors">
-            <div id="corsivo-theme-configurator-colors"></div>
-        </div>
-        <div class="corsivo-theme-section" data-section="breakpoints">
-            <div id="corsivo-theme-configurator-breakpoints"></div>
-        </div>
-        <div class="corsivo-theme-section" data-section="spacing">
-            <div id="corsivo-theme-configurator-spacing"></div>
-        </div>
-        <div class="corsivo-theme-section" data-section="functional-pages">
-            <div id="corsivo-theme-configurator-functional-pages"></div>
-        </div>
-		<div class="corsivo-theme-section" data-section="templates">
-			<div id="corsivo-theme-configurator-templates"></div>
+		<?php $navigation_groups = corsivo_core_editor_navigation_groups($settings); ?>
+		<nav class="corsivo-core-group-nav" aria-label="Aree delle impostazioni">
+			<?php foreach ($navigation_groups as $group_key => $group): ?>
+				<a href="#<?= esc_attr(array_key_first($group['sections'])) ?>" data-group="<?= esc_attr($group_key) ?>"><?= esc_html($group['label']) ?></a>
+			<?php endforeach; ?>
+		</nav>
+		<div class="corsivo-core-layout">
+			<nav class="corsivo-core-sidebar" aria-label="Sottosezioni">
+				<?php foreach ($navigation_groups as $group_key => $group): ?>
+					<div class="corsivo-core-submenu" data-group="<?= esc_attr($group_key) ?>" hidden>
+						<?php foreach ($group['sections'] as $section_key => $section_label): ?>
+							<a href="#<?= esc_attr($section_key) ?>" data-section="<?= esc_attr($section_key) ?>"><?= esc_html($section_label) ?></a>
+						<?php endforeach; ?>
+					</div>
+				<?php endforeach; ?>
+			</nav>
+			<div class="corsivo-core-content">
+				<div class="corsivo-theme-section" data-section="overview" hidden>
+					<div id="corsivo-theme-configurator-overview"></div>
+				</div>
+				<div class="corsivo-theme-section" data-section="fonts" hidden>
+					<div id="corsivo-theme-configurator-fonts"></div>
+				</div>
+				<div class="corsivo-theme-section" data-section="styles" hidden>
+					<div id="corsivo-theme-configurator-styles"></div>
+				</div>
+				<div class="corsivo-theme-section" data-section="colors" hidden>
+					<div id="corsivo-theme-configurator-colors"></div>
+				</div>
+				<div class="corsivo-theme-section" data-section="breakpoints" hidden>
+					<div id="corsivo-theme-configurator-breakpoints"></div>
+				</div>
+				<div class="corsivo-theme-section" data-section="spacing" hidden>
+					<div id="corsivo-theme-configurator-spacing"></div>
+				</div>
+				<div class="corsivo-theme-section" data-section="functional-pages" hidden>
+					<div id="corsivo-theme-configurator-functional-pages"></div>
+				</div>
+				<div class="corsivo-theme-section" data-section="templates" hidden>
+					<div id="corsivo-theme-configurator-templates"></div>
+				</div>
+				<div class="corsivo-theme-section" data-section="integrations" hidden>
+					<?php corsivo_theme_integrations_render(); ?>
+				</div>
+				<div class="corsivo-theme-section" data-section="history" hidden>
+					<?php corsivo_theme_activity_log_render(); ?>
+				</div>
+				<div class="corsivo-theme-section" data-section="wordpress-features" hidden>
+					<?php corsivo_core_wordpress_features_render(); ?>
+				</div>
+				<div class="corsivo-theme-section" data-section="toolkit" hidden>
+					<?php corsivo_core_toolkit_render(); ?>
+				</div>
+				<form id="corsivo-theme-settings-form" method="post" action="" hidden>
+					<?php wp_nonce_field('corsivo_theme_settings_action', 'corsivo_theme_settings_nonce'); ?>
+					<input type="hidden" name="settings_revision" value="<?= esc_attr(corsivo_theme_settings_revision($settings)) ?>">
+					<div class="corsivo-theme-section" data-section="global-settings" hidden>
+						<?php corsivo_theme_global_settings_render($settings, $current_lang); ?>
+					</div>
+					<div class="corsivo-theme-section" data-section="wordpress" hidden>
+						<?php corsivo_theme_wordpress_render($settings, $current_lang); ?>
+					</div>
+					<div class="corsivo-theme-section" data-section="custom-slugs" hidden>
+						<?php corsivo_theme_custom_slugs_render($settings, $current_lang); ?>
+					</div>
+					<p class="submit" id="corsivo-theme-php-submit">
+						<input type="submit" name="submit" id="submit" class="button button-primary" value="Save Changes">
+					</p>
+				</form>
+			</div>
 		</div>
-		<div class="corsivo-theme-section" data-section="integrations">
-			<?php corsivo_theme_integrations_render(); ?>
-		</div>
-		<div class="corsivo-theme-section" data-section="history">
-			<?php corsivo_theme_activity_log_render(); ?>
-		</div>
-		<div class="corsivo-theme-section" data-section="wordpress-features">
-			<?php corsivo_core_wordpress_features_render(); ?>
-		</div>
-		<div class="corsivo-theme-section" data-section="toolkit">
-			<?php corsivo_core_toolkit_render(); ?>
-		</div>
-
-        <!-- PHP form sections -->
-		<form id="corsivo-theme-settings-form" method="post" action="">
-			<?php wp_nonce_field('corsivo_theme_settings_action', 'corsivo_theme_settings_nonce'); ?>
-			<input type="hidden" name="settings_revision" value="<?= esc_attr(corsivo_theme_settings_revision($settings)) ?>">
-            <div class="corsivo-theme-section" data-section="global-settings">
-                <?php corsivo_theme_global_settings_render($settings, $current_lang); ?>
-            </div>
-            <div class="corsivo-theme-section" data-section="wordpress">
-                <?php corsivo_theme_wordpress_render($settings, $current_lang); ?>
-            </div>
-            <div class="corsivo-theme-section" data-section="custom-slugs">
-                <?php corsivo_theme_custom_slugs_render($settings, $current_lang); ?>
-            </div>
-            <p class="submit" id="corsivo-theme-php-submit">
-                <input type="submit" name="submit" id="submit" class="button button-primary" value="Save Changes">
-            </p>
-        </form>
     </div>
     <?php
 }

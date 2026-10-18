@@ -1,127 +1,115 @@
 document.addEventListener( 'DOMContentLoaded', () => {
 	const wrapper = document.querySelector( '.corsivo-theme-wrap' );
-	if ( ! wrapper ) return;
-
-	const navigation = wrapper.querySelector( '.corsivo-theme-nav' );
-	const buttons = [
-		...wrapper.querySelectorAll( '.corsivo-theme-nav [data-section]' ),
-	];
-	const sections = [
-		...wrapper.querySelectorAll( '.corsivo-theme-section[data-section]' ),
-	];
-	const settingsForm = document.getElementById(
-		'corsivo-theme-settings-form'
-	);
-	const formUrl = settingsForm
-		? settingsForm.getAttribute( 'action' ) || ''
-		: '';
-	const availableSections = new Set(
-		buttons.map( ( button ) => button.dataset.section )
-	);
-
-	sections.forEach( ( section ) => {
-		section.id = `corsivo-theme-section-${ section.dataset.section }`;
-		section.setAttribute( 'role', 'tabpanel' );
-		section.setAttribute(
-			'aria-labelledby',
-			`corsivo-theme-tab-${ section.dataset.section }`
-		);
-	} );
-	buttons.forEach( ( button ) => {
-		button.id = `corsivo-theme-tab-${ button.dataset.section }`;
-		button.setAttribute(
-			'aria-controls',
-			`corsivo-theme-section-${ button.dataset.section }`
-		);
-	} );
-
-	const keepActiveTabVisible = ( button ) => {
-		if ( ! navigation || ! button ) return;
-
-		const navigationRect = navigation.getBoundingClientRect();
-		const buttonRect = button.getBoundingClientRect();
-		const outsideViewport =
-			buttonRect.left < navigationRect.left ||
-			buttonRect.right > navigationRect.right;
-
-		if ( outsideViewport ) {
-			button.scrollIntoView( { block: 'nearest', inline: 'nearest' } );
-		}
-	};
-
-	const activateSection = ( requestedSection ) => {
-		const section = availableSections.has( requestedSection )
-			? requestedSection
-			: 'styles';
-		wrapper.dataset.active = section;
-		let activeButton = null;
-
-		buttons.forEach( ( button ) => {
-			const active = button.dataset.section === section;
-			if ( active ) activeButton = button;
-			button.classList.toggle( 'active', active );
-			button.setAttribute( 'aria-selected', active ? 'true' : 'false' );
-			button.tabIndex = active ? 0 : -1;
-		} );
-		sections.forEach( ( panel ) => {
-			panel.hidden = panel.dataset.section !== section;
-		} );
-
-		if ( settingsForm ) settingsForm.action = `${ formUrl }#${ section }`;
-		keepActiveTabVisible( activeButton );
-	};
-
-	const selectSection = ( section ) => {
-		if ( window.location.hash === `#${ section }` ) {
-			activateSection( section );
-		} else {
-			window.location.hash = section;
-		}
-	};
-
-	buttons.forEach( ( button ) => {
-		button.addEventListener( 'click', () => {
-			selectSection( button.dataset.section );
-		} );
-	} );
-
-	if ( navigation ) {
-		navigation.addEventListener( 'keydown', ( event ) => {
-			const currentIndex = buttons.indexOf( event.target );
-			if ( currentIndex === -1 ) return;
-
-			const rtl = getComputedStyle( navigation ).direction === 'rtl';
-			let nextIndex = null;
-
-			switch ( event.key ) {
-				case 'ArrowLeft':
-					nextIndex = currentIndex + ( rtl ? 1 : -1 );
-					break;
-				case 'ArrowRight':
-					nextIndex = currentIndex + ( rtl ? -1 : 1 );
-					break;
-				case 'Home':
-					nextIndex = 0;
-					break;
-				case 'End':
-					nextIndex = buttons.length - 1;
-					break;
-				default:
-					return;
-			}
-
-			event.preventDefault();
-			const nextButton =
-				buttons[ ( nextIndex + buttons.length ) % buttons.length ];
-			nextButton.focus( { preventScroll: true } );
-			selectSection( nextButton.dataset.section );
-		} );
+	if ( ! wrapper ) {
+		return;
 	}
 
-	window.addEventListener( 'hashchange', () =>
-		activateSection( window.location.hash.slice( 1 ) )
+	const groupLinks = [
+		...wrapper.querySelectorAll( '.corsivo-core-group-nav a[data-group]' ),
+	];
+	const submenus = [
+		...wrapper.querySelectorAll( '.corsivo-core-submenu[data-group]' ),
+	];
+	const sectionLinks = [
+		...wrapper.querySelectorAll( '.corsivo-core-sidebar a[data-section]' ),
+	];
+	const panels = [
+		...wrapper.querySelectorAll( '.corsivo-theme-section[data-section]' ),
+	];
+	const settingsForm = wrapper.querySelector(
+		'#corsivo-theme-settings-form'
 	);
-	const querySection =
-		new URLSearchParams( window.location.search ).get( 'section' ) || '';
-	activateSection( window.location.hash.slice( 1 ) || querySection );
+	const phpSubmit = wrapper.querySelector( '#corsivo-theme-php-submit' );
+	const formUrl =
+		settingsForm?.getAttribute( 'action' )?.split( '#' )[ 0 ] || '';
+	const sectionGroups = new Map();
+	const groupDefaults = new Map();
+	const visitedSections = new Map();
+
+	submenus.forEach( ( submenu ) => {
+		const links = submenu.querySelectorAll( 'a[data-section]' );
+		if ( ! links.length ) {
+			return;
+		}
+
+		groupDefaults.set( submenu.dataset.group, links[ 0 ].dataset.section );
+		links.forEach( ( link ) => {
+			sectionGroups.set( link.dataset.section, submenu.dataset.group );
+		} );
+	} );
+
+	sectionLinks.forEach( ( link ) => {
+		const panel = panels.find(
+			( candidate ) => candidate.dataset.section === link.dataset.section
+		);
+		if ( ! panel ) {
+			return;
+		}
+
+		panel.id ||= `corsivo-theme-section-${ link.dataset.section }`;
+		link.setAttribute( 'aria-controls', panel.id );
+	} );
+
+	const activateSection = ( requestedSection ) => {
+		const section = sectionGroups.has( requestedSection )
+			? requestedSection
+			: 'overview';
+		const group = sectionGroups.get( section );
+		const activePanel = panels.find(
+			( panel ) => panel.dataset.section === section
+		);
+		const phpSection = !! settingsForm?.contains( activePanel );
+		visitedSections.set( group, section );
+		wrapper.dataset.active = section;
+
+		groupLinks.forEach( ( link ) => {
+			const active = link.dataset.group === group;
+			const target =
+				visitedSections.get( link.dataset.group ) ||
+				groupDefaults.get( link.dataset.group );
+			link.setAttribute( 'href', `#${ target }` );
+			if ( active ) {
+				link.setAttribute( 'aria-current', 'true' );
+			} else {
+				link.removeAttribute( 'aria-current' );
+			}
+		} );
+		submenus.forEach( ( submenu ) => {
+			submenu.hidden = submenu.dataset.group !== group;
+		} );
+		sectionLinks.forEach( ( link ) => {
+			if ( link.dataset.section === section ) {
+				link.setAttribute( 'aria-current', 'page' );
+			} else {
+				link.removeAttribute( 'aria-current' );
+			}
+		} );
+		panels.forEach( ( panel ) => {
+			panel.hidden = panel !== activePanel;
+		} );
+
+		if ( settingsForm ) {
+			settingsForm.hidden = ! phpSection;
+			settingsForm.action = `${ formUrl }#${ section }`;
+		}
+		if ( phpSubmit ) {
+			phpSubmit.hidden = ! phpSection;
+		}
+
+		if ( window.location.hash !== `#${ section }` ) {
+			const currentUrl = new URL( window.location.href );
+			currentUrl.hash = section;
+			window.history.replaceState( window.history.state, '', currentUrl );
+		}
+	};
+
+	const activateCurrentSection = () => {
+		const querySection = new URLSearchParams( window.location.search ).get(
+			'section'
+		);
+		activateSection( window.location.hash.slice( 1 ) || querySection );
+	};
+
+	window.addEventListener( 'hashchange', activateCurrentSection );
+	activateCurrentSection();
 } );

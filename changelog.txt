@@ -1,3 +1,10 @@
+= 2.1.0 — 18/10/2026 =
+* includes/admin/settings.php: organizzate le opzioni nei macrogruppi Generali, Design e WordPress con sottosezioni definite in un'unica configurazione PHP; Functional Pages e Custom Slugs restano condizionali.
+* includes/admin/script.js: conservati hash e collegamenti esistenti, parametro section di History, avanti/indietro e ultima sottosezione per gruppo; cambio sezione senza rimontare i pannelli o perdere input PHP/React non salvati.
+* includes/admin/style.css: macrogruppi in alto, sottomenù laterale da 188 px e opzioni a destra; sotto 960 px il sottomenù passa sopra ai contenuti. Navigazione semantica con aria-current.
+* Mantenuti i salvataggi separati originari. Sorgenti React invariati, senza nuova build; aggiornati versione e documentazione.
+* Superati sintassi PHP/JavaScript, lint JavaScript/CSS e dieci suite PHP; verificati desktop 1280 px, mobile 390 px senza overflow e sezioni condizionali.
+
 = 2.0.0 — 18/10/2026 =
 * Rinominati plugin, directory e bootstrap in Corsivo Core Editor; repository trasferito da corsivo-suite/theme-editor a corsivo-suite/core-editor e riferimenti di aggiornamento e distribuzione allineati.
 * Aggiunta la sezione WordPress Features: pingback/trackback, revisioni con rispetto della costante ambiente, Heartbeat per amministrazione/editor, pattern remoti ed emoji. WP-Cron mostra stato ed eventi in sola lettura.
