@@ -20,6 +20,9 @@ document.addEventListener( 'DOMContentLoaded', () => {
 		'#corsivo-theme-settings-form'
 	);
 	const phpSubmit = wrapper.querySelector( '#corsivo-theme-php-submit' );
+	const sectionField = settingsForm?.querySelector(
+		'input[name="settings_section"]'
+	);
 	const formUrl =
 		settingsForm?.getAttribute( 'action' )?.split( '#' )[ 0 ] || '';
 	const sectionGroups = new Map();
@@ -94,6 +97,9 @@ document.addEventListener( 'DOMContentLoaded', () => {
 		}
 		if ( phpSubmit ) {
 			phpSubmit.hidden = ! phpSection;
+		}
+		if ( sectionField ) {
+			sectionField.value = section;
 		}
 
 		if ( window.location.hash !== `#${ section }` ) {

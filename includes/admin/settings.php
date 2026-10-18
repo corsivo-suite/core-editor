@@ -550,9 +550,69 @@ function corsivo_theme_save_settings($settings, $expected_revision = null) {
 
 // Add settings page to the menu
 function corsivo_theme_settings_menu() {
-    add_options_page('Corsivo Core Editor', 'Corsivo Core Editor', 'manage_options', 'corsivo-core-editor', 'corsivo_theme_settings_page');
+	$hook = add_options_page('Corsivo Core Editor', 'Corsivo Core Editor', 'manage_options', 'corsivo-core-editor', 'corsivo_theme_settings_page');
+	add_action('load-' . $hook, 'corsivo_theme_handle_settings_submit');
 }
 add_action('admin_menu', 'corsivo_theme_settings_menu');
+
+function corsivo_theme_handle_settings_submit() {
+	if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+		return;
+	}
+	if (!current_user_can('manage_options')) {
+		wp_die(esc_html__('You are not allowed to manage Theme settings.', 'corsivo-core-editor'), 403);
+	}
+	check_admin_referer('corsivo_theme_settings_action', 'corsivo_theme_settings_nonce');
+
+	$settings = corsivo_theme_get_settings();
+	$settings['global'] = array_merge(
+		isset($settings['global']) && is_array($settings['global']) ? $settings['global'] : array(),
+		array(
+			'tab_functional_pages' => isset($_POST['corsivo-theme-tab-functional-pages']),
+			'tab_custom_slugs' => isset($_POST['corsivo-theme-tab-custom-slugs']),
+			'core_renders' => isset($_POST['corsivo-theme-core-renders']),
+			'gutenberg_footer' => isset($_POST['corsivo-theme-gutenberg-footer']),
+			'cpt_menu_parent' => isset($_POST['corsivo-theme-cpt-menu-parent']),
+			'force_style_injection' => isset($_POST['corsivo-theme-force-style-injection']),
+			'minify_css' => isset($_POST['corsivo-theme-minify-css']),
+			'minify_js' => isset($_POST['corsivo-theme-minify-js']),
+		)
+	);
+	$settings['custom_slugs'] = isset($_POST['custom_slugs']) && is_array($_POST['custom_slugs'])
+		? wp_unslash($_POST['custom_slugs'])
+		: array();
+	if (isset($_POST['wordpress']) && is_array($_POST['wordpress'])) {
+		$settings['wordpress'] = wp_unslash($_POST['wordpress']);
+	}
+
+	$expected_revision = isset($_POST['settings_revision']) && is_string($_POST['settings_revision'])
+		? sanitize_text_field(wp_unslash($_POST['settings_revision']))
+		: '';
+	$save_result = corsivo_theme_save_settings($settings, $expected_revision);
+	if (is_wp_error($save_result)) {
+		$error_data = $save_result->get_error_data('corsivo_theme_settings_side_effect_failed');
+		$notice_type = is_array($error_data) && !empty($error_data['settings_saved']) ? 'warning' : 'error';
+		add_settings_error('corsivo_theme_settings', $save_result->get_error_code(), esc_html($save_result->get_error_message()), $notice_type);
+		return;
+	}
+
+	$section = isset($_POST['settings_section']) && is_string($_POST['settings_section'])
+		? sanitize_key(wp_unslash($_POST['settings_section']))
+		: '';
+	if (!in_array($section, array('global-settings', 'wordpress', 'custom-slugs'), true)) {
+		$section = 'global-settings';
+	}
+	$query = array(
+		'page' => 'corsivo-core-editor',
+		'corsivo-theme-notice' => 'settings-saved',
+		'section' => $section,
+	);
+	if (isset($_GET['lang']) && is_string($_GET['lang'])) {
+		$query['lang'] = sanitize_key(wp_unslash($_GET['lang']));
+	}
+	wp_safe_redirect(add_query_arg($query, admin_url('options-general.php')) . '#' . $section, 303);
+	exit;
+}
 
 function corsivo_theme_hide_developer_settings_menu() {
 	if (current_user_can('manage_corsivo_developer_tools')) {
@@ -828,9 +888,11 @@ function corsivo_theme_settings_page() {
 
 	$settings = corsivo_theme_get_settings();
 	$current_lang = corsivo_theme_current_language();
-	$request_method = isset($_SERVER['REQUEST_METHOD']) ? strtoupper(sanitize_text_field(wp_unslash($_SERVER['REQUEST_METHOD']))) : 'GET';
-	$notice_key = isset($_GET['corsivo-theme-notice']) ? sanitize_key(wp_unslash($_GET['corsivo-theme-notice'])) : '';
+	$notice_key = ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET' && isset($_GET['corsivo-theme-notice']) && is_string($_GET['corsivo-theme-notice'])
+		? sanitize_key(wp_unslash($_GET['corsivo-theme-notice']))
+		: '';
 	$notices = array(
+		'settings-saved' => array('success', 'Settings saved successfully.'),
 		'log-settings-saved' => array('success', 'Activity log settings saved.'),
 		'log-cleared' => array('success', 'Activity log cleared.'),
 		'integrations-saved' => array('success', 'Integration settings saved.'),
@@ -842,43 +904,6 @@ function corsivo_theme_settings_page() {
 		echo '<div class="notice notice-' . esc_attr($notices[$notice_key][0]) . ' is-dismissible"><p>' . esc_html($notices[$notice_key][1]) . '</p></div>';
 	}
 
-	if ($request_method === 'POST') {
-		check_admin_referer('corsivo_theme_settings_action', 'corsivo_theme_settings_nonce');
-
-		$settings['global'] = array_merge(
-			isset($settings['global']) && is_array($settings['global']) ? $settings['global'] : array(),
-			array(
-				'tab_functional_pages' => isset($_POST['corsivo-theme-tab-functional-pages']),
-				'tab_custom_slugs' => isset($_POST['corsivo-theme-tab-custom-slugs']),
-				'core_renders' => isset($_POST['corsivo-theme-core-renders']),
-				'gutenberg_footer' => isset($_POST['corsivo-theme-gutenberg-footer']),
-				'cpt_menu_parent' => isset($_POST['corsivo-theme-cpt-menu-parent']),
-				'force_style_injection' => isset($_POST['corsivo-theme-force-style-injection']),
-				'minify_css' => isset($_POST['corsivo-theme-minify-css']),
-				'minify_js' => isset($_POST['corsivo-theme-minify-js']),
-			)
-		);
-		$settings['custom_slugs'] = isset($_POST['custom_slugs']) && is_array($_POST['custom_slugs'])
-			? wp_unslash($_POST['custom_slugs'])
-			: array();
-		if (isset($_POST['wordpress']) && is_array($_POST['wordpress'])) {
-			$settings['wordpress'] = wp_unslash($_POST['wordpress']);
-		}
-
-		$expected_revision = isset($_POST['settings_revision'])
-			? sanitize_text_field(wp_unslash($_POST['settings_revision']))
-			: '';
-		$save_result = corsivo_theme_save_settings($settings, $expected_revision);
-		if (is_wp_error($save_result)) {
-			$error_data = $save_result->get_error_data('corsivo_theme_settings_side_effect_failed');
-			$notice_class = is_array($error_data) && !empty($error_data['settings_saved']) ? 'notice-warning' : 'notice-error';
-			echo '<div class="notice ' . esc_attr($notice_class) . ' is-dismissible"><p>' . esc_html($save_result->get_error_message()) . '</p></div>';
-		} else {
-			echo '<div class="notice notice-success is-dismissible"><p>Settings saved successfully.</p></div>';
-		}
-	}
-
-    $settings = corsivo_theme_get_settings(true);
     ?>
     <div class="wrap corsivo-theme-wrap">
         <h1>Corsivo Core Editor</h1>
@@ -939,6 +964,7 @@ function corsivo_theme_settings_page() {
 				<form id="corsivo-theme-settings-form" method="post" action="" hidden>
 					<?php wp_nonce_field('corsivo_theme_settings_action', 'corsivo_theme_settings_nonce'); ?>
 					<input type="hidden" name="settings_revision" value="<?= esc_attr(corsivo_theme_settings_revision($settings)) ?>">
+					<input type="hidden" name="settings_section" value="global-settings">
 					<div class="corsivo-theme-section" data-section="global-settings" hidden>
 						<?php corsivo_theme_global_settings_render($settings, $current_lang); ?>
 					</div>

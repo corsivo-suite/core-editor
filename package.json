@@ -1,6 +1,6 @@
 {
   "name": "corsivo-core-editor",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "private": true,
   "files": [
     "assets",
@@ -23,6 +23,6 @@
     "lint": "npm --prefix configurator run lint",
     "package": "node configurator/node_modules/@wordpress/scripts/bin/wp-scripts.js plugin-zip",
     "test": "npm --prefix configurator test -- --runInBand",
-    "test:php": "php tests/storage-static.php && php tests/security-regressions.php && php tests/backend-regressions.php && php tests/runtime-style-regressions.php && php tests/minify-regressions.php && php tests/configurator-assets.php && php tests/admin-navigation.php && php tests/wordpress-features.php && php tests/toolkit-integration.php && php tests/toolkit-security.php"
+    "test:php": "php tests/storage-static.php && php tests/security-regressions.php && php tests/backend-regressions.php && php tests/runtime-style-regressions.php && php tests/minify-regressions.php && php tests/configurator-assets.php && php tests/admin-navigation.php && php tests/admin-save-flow.php && php tests/wordpress-features.php && php tests/toolkit-integration.php && php tests/toolkit-security.php"
   }
 }

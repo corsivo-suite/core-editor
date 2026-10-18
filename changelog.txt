@@ -1,3 +1,9 @@
+= 2.1.1 — 18/10/2026 =
+* includes/admin/settings.php: elaborato il POST nel caricamento della pagina, prima della localizzazione React; dopo il salvataggio un redirect 303 ricarica configurazione e revisione aggiornate, evitando falsi conflitti ai salvataggi consecutivi.
+* includes/admin/settings.php e script.js: conservata la sottosezione tramite campo settings_section validato; notifiche di successo sul GET e segnalazioni di errore prima del rendering, mantenendo il controllo dei conflitti reali.
+* tests/admin-save-flow.php e package.json: aggiunte regressioni del flusso POST/redirect/GET e dei salvataggi consecutivi al runner PHP.
+* Superate undici suite PHP, incluse 62 asserzioni del nuovo test che fallisce sulla versione precedente; superati sintassi PHP/JavaScript e lint JavaScript. Verificati nel browser salvataggi PHP consecutivi, sequenza PHP/React/PHP, conflitto reale fra due schede senza sovrascrittura e successivo tentativo riuscito, conservazione della sottosezione e persistenza dopo reload.
+
 = 2.1.0 — 18/10/2026 =
 * includes/admin/settings.php: organizzate le opzioni nei macrogruppi Generali, Design e WordPress con sottosezioni definite in un'unica configurazione PHP; Functional Pages e Custom Slugs restano condizionali.
 * includes/admin/script.js: conservati hash e collegamenti esistenti, parametro section di History, avanti/indietro e ultima sottosezione per gruppo; cambio sezione senza rimontare i pannelli o perdere input PHP/React non salvati.

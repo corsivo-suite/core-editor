@@ -3,7 +3,7 @@
 		* @wordpress-plugin
 		* Plugin Name:       Corsivo Core Editor
 		* Description:       Configure WordPress features, optional site modules and the theme design system from one administration page.
-		* Version:           2.1.0
+		* Version:           2.1.1
 		* Author:            Salvatore Corsi
 		* Author URI:        https://salvatorecorsi.com
 		* Plugin URI:        https://github.com/corsivo-suite/core-editor
@@ -17,7 +17,7 @@
 
 	if (!defined('ABSPATH')) exit;
 
-	define('CORSIVO_CORE_EDITOR_VERSION', '2.1.0');
+	define('CORSIVO_CORE_EDITOR_VERSION', '2.1.1');
 	define('CORSIVO_CORE_EDITOR_FILE', __FILE__);
 	define('CORSIVO_CORE_EDITOR_DIR', plugin_dir_path(__FILE__));
 
