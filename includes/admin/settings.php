@@ -550,7 +550,7 @@ function corsivo_theme_save_settings($settings, $expected_revision = null) {
 
 // Add settings page to the menu
 function corsivo_theme_settings_menu() {
-	$hook = add_options_page('Corsivo Core Editor', 'Corsivo Core Editor', 'manage_options', 'corsivo-core-editor', 'corsivo_theme_settings_page');
+	$hook = add_options_page('Corsivo Core Editor', 'Configurazione sito', 'manage_options', 'corsivo-core-editor', 'corsivo_theme_settings_page');
 	add_action('load-' . $hook, 'corsivo_theme_handle_settings_submit');
 }
 add_action('admin_menu', 'corsivo_theme_settings_menu');
