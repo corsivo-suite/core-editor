@@ -225,7 +225,7 @@
 			'auth_callback' => function ( $allowed, $meta_key, $post_id ) { return current_user_can( 'edit_post', $post_id ); },
 		);
 		$hex_args = array_merge($meta_args, array('sanitize_callback' => 'corsivo_theme_sanitize_footer_color'));
-		$slug_args = array_merge($meta_args, array('sanitize_callback' => 'sanitize_title'));
+		$slug_args = array_merge($meta_args, array('sanitize_callback' => fn( $value ) => sanitize_title( $value )));
 		register_post_meta( 'page', '_corsivo_theme_footer_bg', $hex_args );
 		register_post_meta( 'page', '_corsivo_theme_footer_bg_slug', $slug_args );
 		register_post_meta( 'page', '_corsivo_theme_footer_color', $hex_args );

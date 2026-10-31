@@ -2403,7 +2403,7 @@ if (!defined('ABSPATH')) exit;
 			'single'        => true,
 			'type'          => 'string',
 			'default'       => '',
-			'sanitize_callback' => 'sanitize_title',
+			'sanitize_callback' => fn( $value ) => sanitize_title( $value ),
 			'auth_callback' => function ($allowed, $meta_key, $post_id) {
 				return current_user_can('edit_post', $post_id);
 			},
